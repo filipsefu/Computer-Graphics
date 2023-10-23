@@ -85,7 +85,21 @@ std::vector<Ray> generatePixelRaysMultisampled(RenderState& state, const Trackba
     // Hint; use `state.sampler.next*d()` to generate random samples in [0, 1).
     auto numSamples = state.features.numPixelSamples;
     std::vector<Ray> rays;
-    // ...
+    
+    //Iterate through all samples
+    for (int sample = 0; sample < numSamples; sample++) {
+
+        //Get sample ([0,1),[0,1))
+        glm::vec2 currentSample = state.sampler.next_2d();
+
+        //Add to pixel (similarly to the method above where .5f was used to place ray at center), divide by resolution * 2 - 1 to get NDC coordinates 
+        //It does this by multiplying resolution by 2 to map to [0,2] and then subtract 1 to map to [-1,1]
+
+        glm::vec2 position = (glm::vec2(pixel) + currentSample) / glm::vec2(screenResolution) * 2.f - 1.f;
+
+        rays.push_back(camera.generateRay(position));
+    }
+
     return rays;
 }
 
@@ -106,6 +120,26 @@ std::vector<Ray> generatePixelRaysStratified(RenderState& state, const Trackball
     // Hint; use `state.sampler.next*d()` to generate random samples in [0, 1).
     auto numSamples = static_cast<uint32_t>(std::round(std::sqrt(float(state.features.numPixelSamples))));
     std::vector<Ray> rays;
-    // ...
+    
+    //Calculate the size of each cell
+    float cellSize = 1.0f / numSamples;
+
+    //Iterate through all cells (entirety of row 1, then row 2, etc)
+    for (uint32_t y = 0; y < numSamples; y++) {
+        for (uint32_t x = 0; x < numSamples; x++) {
+
+            glm::vec2 currentSample = state.sampler.next_2d();
+
+            //Calculates the sample position within the pixel by first finding the location of the cell (glm::vec2(x,y) * cellSize) 
+            //and then adding the current sample (scaled by cellsize)
+            glm::vec2 samplePosition = glm::vec2(x, y) * cellSize + currentSample * cellSize;
+
+            //Add the sample position (similarly to offsetting by 0.5f to get to center) convert to NDC.
+            glm::vec2 position = (glm::vec2(pixel) + samplePosition) / glm::vec2(screenResolution) * 2.f - 1.f;
+
+            rays.push_back(camera.generateRay(position));
+        }
+    }
+
     return rays;
 }
