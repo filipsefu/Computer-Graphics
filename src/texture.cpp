@@ -17,7 +17,8 @@ glm::vec3 sampleTextureNearest(const Image& image, const glm::vec2& texCoord)
     // Note: the center of the first pixel should be at coordinates (0.5, 0.5)
     // Given texcoords, return the corresponding pixel of the image
 
-    // Convert texCoord to pixel index (multiply by image resolution)
+    // Convert texCoord to pixel index. For TextureNearest you only need to use the integer part to find it's index. (indices range from 0 to width/height - 1)
+
     int pixelx_idx = std::floor(texCoord.x * (image.width));
     int pixely_idx = std::floor(texCoord.y * (image.height));
 
@@ -40,28 +41,32 @@ glm::vec3 sampleTextureNearest(const Image& image, const glm::vec2& texCoord)
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
 {
-    // Pixel Location
+    // Pixel Location - Same method as NN to find index of top left corner of pixel 
+
     int pixelx_idx = std::floor(texCoord.x * (image.width));
     int pixely_idx = std::floor(texCoord.y * (image.height));
 
-    // Saving offset for interpolation
-    int offsetX = (texCoord.x * (image.width)) - std::floor(texCoord.x * (image.width));
-    int offsetY = (texCoord.y * (image.height)) - std::floor(texCoord.y * (image.height));
+    pixelx_idx = glm::clamp(pixelx_idx, 0, image.width - 1);
+    pixely_idx = glm::clamp(pixely_idx, 0, image.height - 1);
 
-    // Top - left pixel idx
-    int tlx_idx = std::floor(texCoord.x * (image.width - 1));
-    int tly_idx = std::floor(texCoord.y * (image.height - 1));
+    // Saving offset for interpolation (this will be the alpha and beta values in bilinear interpolation equation). 
+    // The offset is calculated by subtracting the integer value from the full decimal value of the coordinate
+    // IE: in 4x4 image: (1,1) maps to (4,4). Thus it will have offset(1,1). 
 
-    // Other idx (offset for other neighbours)
-    // Use clamp to ensure we stay within the image border
-    int x1 = glm::clamp(tlx_idx + 1, 0, image.width - 1);
-    int y1 = glm::clamp(tly_idx + 1, 0, image.height - 1);
+    int offsetX = (texCoord.x * (image.width)) - pixelx_idx; //alpha
+    int offsetY = (texCoord.y * (image.height)) - pixely_idx; //beta
 
-    // Retrieve values of neighbouring texels using formula from lecture
+    // Indexes of other neighbours. 
+    // Make sure to clamp to ensure there is no unexpected behaviour at the borders.
 
-    glm::vec3 texelTL = image.pixels[tly_idx * image.width + tlx_idx];
-    glm::vec3 texelTR = image.pixels[tly_idx * image.width + x1];
-    glm::vec3 texelBL = image.pixels[y1 * image.width + tlx_idx];
+    int x1 = glm::clamp(pixelx_idx + 1, 0, image.width - 1);
+    int y1 = glm::clamp(pixely_idx + 1, 0, image.height - 1);
+
+    // Retrieve values of neighbouring texels using indexes calculated using the formula from the lecture
+
+    glm::vec3 texelTL = image.pixels[pixely_idx * image.width + pixelx_idx];
+    glm::vec3 texelTR = image.pixels[pixely_idx * image.width + x1];
+    glm::vec3 texelBL = image.pixels[y1 * image.width + pixelx_idx];
     glm::vec3 texelBR = image.pixels[y1 * image.width + x1];
 
     // Bilinear Interpolation
@@ -74,12 +79,6 @@ glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
             ((1.0f - offsetX) * texelBL + //(1-A) * BottomLeft
                 ((0.0f + offsetX) * texelBR))) //(A) * BottomRight
         ;
-
-    // TODO: implement this function.
-    // Note: the pixels are stored in a 1D array, row-major order. You can convert from (i, j) to
-    //       an index using the method seen in the lecture.
-    // Note: the center of the first pixel should be at coordinates (0.5, 0.5)
-    // Given texcoords, return the corresponding pixel of the image
 
     return interpolatedTexture;
 }
