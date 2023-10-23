@@ -91,11 +91,11 @@ glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection
     if (dot(N, L) <= 0)
         return glm::vec3(0.0f, 0.0f, 0.0f);
 
-    //should check REFLECTION direction
-    glm::vec3 R = normalize(L - 2 * dot(N, L) * N);
+    // check REFLECTION direction
+    glm::vec3 R = normalize(-L + 2 * dot(N, L) * N);
     glm::vec3 V = normalize(cameraDirection);
 
-    return sampleMaterialKd(state, hitInfo) * lightColor * glm::pow(dot(V, R), hitInfo.material.shininess);
+    return hitInfo.material.ks * lightColor * glm::pow(dot(V, R), hitInfo.material.shininess);
 }
 
 // TODO: Standard feature
@@ -124,7 +124,7 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
     glm::vec3 V = normalize(cameraDirection);
     glm::vec3 H = normalize(L + V);
 
-    return sampleMaterialKd(state, hitInfo) * lightColor * glm::pow(dot(N, H), hitInfo.material.shininess);
+    return hitInfo.material.ks * lightColor * glm::pow(dot(N, H), hitInfo.material.shininess);
 }
 
 // TODO: Standard feature
@@ -165,5 +165,5 @@ glm::vec3 computeLinearGradientModel(RenderState& state, const glm::vec3& camera
     if (dot(N, L) <= 0)
         return glm::vec3(0.0f, 0.0f, 0.0f);
 
-    return sampleMaterialKd(state, hitInfo) * lightColor * cos_theta * gradient.sample;
+    return sampleMaterialKd(state, hitInfo) * lightColor * cos_theta;
 }
