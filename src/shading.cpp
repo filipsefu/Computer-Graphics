@@ -62,6 +62,9 @@ glm::vec3 computeLambertianModel(RenderState& state, const glm::vec3& cameraDire
     glm::vec3 N = normalize(hitInfo.normal);
     glm::vec3 L = normalize(lightDirection);
 
+    if (dot(N, L) <= 0)
+        return glm::vec3(0.0f, 0.0f, 0.0f);
+
     return sampleMaterialKd(state, hitInfo) * dot(N, L);
 }
 
@@ -84,6 +87,11 @@ glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection
 {
     glm::vec3 N = normalize(hitInfo.normal);
     glm::vec3 L = normalize(lightDirection);
+
+    if (dot(N, L) <= 0)
+        return glm::vec3(0.0f, 0.0f, 0.0f);
+
+    //should check REFLECTION direction
     glm::vec3 R = normalize(L - 2 * dot(N, L) * N);
     glm::vec3 V = normalize(cameraDirection);
 
@@ -109,6 +117,10 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
 {
     glm::vec3 N = normalize(hitInfo.normal);
     glm::vec3 L = normalize(lightDirection);
+
+    if (dot(N, L) <= 0)
+        return glm::vec3(0.0f, 0.0f, 0.0f);
+
     glm::vec3 V = normalize(cameraDirection);
     glm::vec3 H = normalize(L + V);
 
@@ -124,7 +136,7 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 LinearGradient::sample(float ti) const
 {
-    return glm::vec3(0.5f);
+    return glm::vec3((ti + 1) / 2);
 }
 
 // TODO: Standard feature
@@ -144,6 +156,14 @@ glm::vec3 LinearGradient::sample(float ti) const
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 computeLinearGradientModel(RenderState& state, const glm::vec3& cameraDirection, const glm::vec3& lightDirection, const glm::vec3& lightColor, const HitInfo& hitInfo, const LinearGradient& gradient)
 {
-    float cos_theta = glm::dot(lightDirection, hitInfo.normal);
-    return glm::vec3(0.f);
+    glm::vec3 N = normalize(hitInfo.normal);
+    glm::vec3 L = normalize(lightDirection);
+
+    //float cos_theta = glm::dot(lightDirection, hitInfo.normal);
+    float cos_theta = glm::dot(L, N);
+
+    if (dot(N, L) <= 0)
+        return glm::vec3(0.0f, 0.0f, 0.0f);
+
+    return sampleMaterialKd(state, hitInfo) * lightColor * cos_theta * gradient.sample;
 }
