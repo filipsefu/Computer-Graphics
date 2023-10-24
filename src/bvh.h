@@ -79,7 +79,7 @@ private: // Private methods
     // Hierarchy construction routine; called by the BVH's constructor, you must implement this method.
     // For a description of the method's arguments, refer to 'bounding_volume_hierarchy.cpp'
     // Note: you are free to modify this function's signature, as long as the constructor builds a BVH
-    void buildRecursive(const Scene& scene, const Features& features, std::span<Primitive> primitives, uint32_t nodeIndex);
+    void buildRecursive(const Scene& scene, const Features& features, std::span<Primitive> primitives, uint32_t nodeIndex, uint32_t level);
 
 private: // Visual debug helpers
     // Compute the nr. of levels in your hierarchy after construction; useful for debugDrawLevel()
@@ -95,11 +95,13 @@ public: // Visual debug
     // For a description of the method's arguments, refer to 'bounding_volume_hierarchy.cpp'
     // You are free to modify this function's signature.
     void debugDrawLevel(int level);
+    void debugDrawLevelHelper(int level, int current_level, int position);
 
     // Draw data of the leaf at the selected index.
     // For a description of the method's arguments, refer to 'bounding_volume_hierarchy.cpp'
     // You are free to modify this function's signature.
     void debugDrawLeaf(int leafIndex);
+    void debugDrawLeafHelper(int leafIndex, int position, int& count);
 
 public: // Public getters
     // Accessors to underlying data
