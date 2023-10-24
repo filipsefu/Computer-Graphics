@@ -98,8 +98,11 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 // This method is unit-tested, so do not change the function signature.
 Ray generatePassthroughRay(Ray ray, HitInfo hitInfo)
 {
-    // TODO: generate a passthrough ray
-    return Ray {};
+    //Use intersection point as the new origin
+
+    glm::vec3 passthroughOrigin = hitInfo.barycentricCoord;
+
+    return Ray {passthroughOrigin, ray.direction};
 }
 
 // TODO: standard feature
@@ -117,7 +120,7 @@ void renderRaySpecularComponent(RenderState& state, Ray ray, const HitInfo& hitI
     //Check if reflections disabled
 
     if (!state.features.enableReflections) {
-        // Reflections are disabled; no further action needed
+        //Reflections are disabled
         return;
     }
 
@@ -142,7 +145,24 @@ void renderRaySpecularComponent(RenderState& state, Ray ray, const HitInfo& hitI
 // This method is unit-tested, so do not change the function signature.
 void renderRayTransparentComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
-    // TODO; you should first implement generatePassthroughRay()
+    //Check if tranparency disabled
+
+    if (!state.features.enableTransparency) {
+        //Transparency is disabled
+        return;
+    }
+
+    //Generate passthrough ray
+    
     Ray r = generatePassthroughRay(ray, hitInfo);
-    // ...
+    
+    //Get alpha value of intersection for alpha blending
+
+    float alpha = hitInfo.material.transparency;
+
+    //Do alpha blending using the alpha value of the intersectionpoint.
+
+    glm::vec3 alphaBlend = (1.0f - alpha) * renderRay(state, r, rayDepth + 1) + (alpha) * hitColor;
+
+    hitColor = alphaBlend;
 }
