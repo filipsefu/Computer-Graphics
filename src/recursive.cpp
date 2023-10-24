@@ -71,9 +71,22 @@ glm::vec3 renderRay(RenderState& state, Ray ray, int rayDepth)
 // This method is unit-tested, so do not change the function signature.
 Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 {
-    // TODO: generate a mirrored ray
-    //       if you use glm::reflect, you will not get points for this method!
-    return Ray {};
+    //Normalize ray direction
+
+    glm::vec3 L = glm::normalize(ray.direction);
+    
+    //Find angle between intersection normal and light direction
+
+    float angleValue = glm::dot(hitInfo.normal, L);
+
+    //Calculate reflection vector using the formula L - (2 * dot(normal,light direction) * normal)
+
+    glm::vec3 R = L - 2.0f * angleValue * hitInfo.normal;
+
+    //Create reflected ray, it's origin will be the intersection point.
+    Ray reflectedRay = {hitInfo.barycentricCoord, R};
+
+    return Ray {reflectedRay};
 }
 
 // TODO: Standard feature
@@ -101,9 +114,20 @@ Ray generatePassthroughRay(Ray ray, HitInfo hitInfo)
 // This method is unit-tested, so do not change the function signature.
 void renderRaySpecularComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
-    // TODO; you should first implement generateReflectionRay()
+    //Check if reflections disabled
+
+    if (!state.features.enableReflections) {
+        // Reflections are disabled; no further action needed
+        return;
+    }
+
+    //Generate reflection ray
+
     Ray r = generateReflectionRay(ray, hitInfo);
-    // ...
+    
+    //Get result, multiply by material.ks, add to hitColor
+
+    hitColor += renderRay(state, r, rayDepth + 1) * hitInfo.material.ks;
 }
 
 // TODO: standard feature
