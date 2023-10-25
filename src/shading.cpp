@@ -136,7 +136,12 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 LinearGradient::sample(float ti) const
 {
-    return glm::vec3((ti + 1) / 2);
+    glm::vec3 no = glm::vec3((ti + 1) / 2);
+    if ((ti + 1) / 2 < 0)
+        no = glm::vec3(0.0);
+    if ((ti + 1) / 2 > 1)
+        no = glm::vec3(1.0);
+    return no;
 }
 
 // TODO: Standard feature
