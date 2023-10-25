@@ -156,14 +156,7 @@ glm::vec3 LinearGradient::sample(float ti) const
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 computeLinearGradientModel(RenderState& state, const glm::vec3& cameraDirection, const glm::vec3& lightDirection, const glm::vec3& lightColor, const HitInfo& hitInfo, const LinearGradient& gradient)
 {
-    glm::vec3 N = normalize(hitInfo.normal);
-    glm::vec3 L = normalize(lightDirection);
+    float cos_theta = glm::dot(lightDirection, hitInfo.normal);
 
-    //float cos_theta = glm::dot(lightDirection, hitInfo.normal);
-    float cos_theta = glm::dot(L, N);
-
-    if (dot(N, L) <= 0)
-        return glm::vec3(0.0f, 0.0f, 0.0f);
-
-    return sampleMaterialKd(state, hitInfo) * lightColor * cos_theta;
+    return computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo) + computePhongModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
 }
