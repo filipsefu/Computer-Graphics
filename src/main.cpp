@@ -73,7 +73,7 @@ int main(int argc, char** argv)
         BVH bvh(scene, config.features);
 
         int bvhDebugLevel = 0;
-        int bvhDebugLeaf = 0;
+        int bvhDebugLeaf = 1;
         bool debugBVHLevel { false };
         bool debugBVHLeaf { false };
         ViewMode viewMode { ViewMode::Rasterization };
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
                     debugBVHLeafId++;
                 } break;
                 case GLFW_KEY_S: {
-                    debugBVHLeafId = std::max(0, debugBVHLeafId - 1);
+                    debugBVHLeafId = std::max(1, debugBVHLeafId - 1);
 
                 } break;
                 case GLFW_KEY_ESCAPE: {
