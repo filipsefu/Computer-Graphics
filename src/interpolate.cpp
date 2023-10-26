@@ -3,7 +3,7 @@
 
 float findArea(const glm::vec3& v0, const glm::vec3& v1)
 {
-    return (1 / 2) * glm::length(glm::cross(v0, v1));
+    return 0.5f * glm::length(glm::cross(v0, v1));
 }
 
 // TODO Standard feature
@@ -25,6 +25,7 @@ glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, cons
     //Compute necessary vectors
     glm::vec3 v0P = p - v0;
     glm::vec3 v0v1 = v1 - v0;
+    glm::vec3 v0v2 = v2 - v0;
 
     glm::vec3 v1P = p - v1;
     glm::vec3 v1v2 = v2 - v1;
@@ -33,12 +34,15 @@ glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, cons
     glm::vec3 v2v0 = v0 - v2;
 
     //Compute areas
-    float totalArea = findArea(v0, v1);
+    float totalArea = findArea(v0v1, v0v2);
 
     float areaAlpha = findArea(v1P, v1v2);
     float areaBeta = findArea(v2P, v2v0);
     float areaGamma = findArea(v0P, v0v1);
 
+    if (totalArea == 0) {
+        return glm::vec3(0);
+    }
     //Compute Barycentric Coordinates
     alpha = areaAlpha / totalArea;
     beta = areaBeta / totalArea;
