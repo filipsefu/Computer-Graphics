@@ -65,7 +65,7 @@ glm::vec3 computeLambertianModel(RenderState& state, const glm::vec3& cameraDire
     if (dot(N, L) <= 0)
         return glm::vec3(0.0f, 0.0f, 0.0f);
 
-    return sampleMaterialKd(state, hitInfo) * dot(N, L);
+    return lightColor * sampleMaterialKd(state, hitInfo) * dot(N, L);
 }
 
 // TODO: Standard feature
@@ -92,8 +92,11 @@ glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection
         return glm::vec3(0.0f, 0.0f, 0.0f);
 
     // check REFLECTION direction
-    glm::vec3 R = normalize(-L + 2 * dot(N, L) * N);
+    glm::vec3 R = normalize(glm::reflect(-L, N));
     glm::vec3 V = normalize(cameraDirection);
+
+    if (dot(V, R) <= 0)
+        return glm::vec3(0.0f, 0.0f, 0.0f);
 
     return hitInfo.material.ks * lightColor * glm::pow(dot(V, R), hitInfo.material.shininess);
 }
@@ -124,6 +127,9 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
     glm::vec3 V = normalize(cameraDirection);
     glm::vec3 H = normalize(L + V);
 
+    if (dot(N, H) <= 0)
+        return glm::vec3(0.0f, 0.0f, 0.0f);
+
     return hitInfo.material.ks * lightColor * glm::pow(dot(N, H), hitInfo.material.shininess);
 }
 
@@ -135,13 +141,19 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
 // - ti; a number between [-1, 1]
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 LinearGradient::sample(float ti) const
-{
-    glm::vec3 no = glm::vec3((ti + 1) / 2);
-    if ((ti + 1) / 2 < 0)
-        no = glm::vec3(0.0);
-    if ((ti + 1) / 2 > 1)
-        no = glm::vec3(1.0);
-    return no;
+{    
+    if (ti <= -1)
+        return this->components.front().color;
+
+    if (ti >= 1)
+        return this->components.back().color;
+
+    for (int i = 0; i < this->components.size() - 1; i++) {
+        if (ti >= this->components.at(i).t && ti <= this->components.at(i + 1).t)
+                return this->components.at(i).color + (ti - this->components.at(i).t) / 2 * this->components.at(i + 1).color;
+    }
+
+    return glm::vec3(0.0f);
 }
 
 // TODO: Standard feature
@@ -163,5 +175,17 @@ glm::vec3 computeLinearGradientModel(RenderState& state, const glm::vec3& camera
 {
     float cos_theta = glm::dot(lightDirection, hitInfo.normal);
 
-    return computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo) + computePhongModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
+    glm::vec3 N = normalize(hitInfo.normal);
+    glm::vec3 L = normalize(lightDirection);
+
+    if (dot(N, L) <= 0)
+        return glm::vec3(0.0f, 0.0f, 0.0f);
+
+    float ti = hitInfo.barycentricCoord.x;
+    if (ti == 0)
+        ti = hitInfo.barycentricCoord.y;
+    if (ti == 0)
+        ti = hitInfo.barycentricCoord.z;
+
+    return gradient.sample(ti) * lightColor * dot(N, L);
 }
