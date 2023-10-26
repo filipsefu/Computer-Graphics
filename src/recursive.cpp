@@ -72,7 +72,6 @@ glm::vec3 renderRay(RenderState& state, Ray ray, int rayDepth)
 Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 {
     //Normalize ray direction
-
     glm::vec3 L = glm::normalize(ray.direction);
     
     //Find angle between intersection normal and light direction
@@ -83,8 +82,10 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 
     glm::vec3 R = L - 2.0f * angleValue * hitInfo.normal;
 
+    glm::vec3 intersection = ray.origin + ray.t * ray.direction;
+
     //Create reflected ray, it's origin will be the intersection point.
-    Ray reflectedRay = {hitInfo.barycentricCoord, R};
+    Ray reflectedRay = {intersection, R};
 
     return Ray {reflectedRay};
 }
@@ -100,7 +101,7 @@ Ray generatePassthroughRay(Ray ray, HitInfo hitInfo)
 {
     //Use intersection point as the new origin
 
-    glm::vec3 passthroughOrigin = hitInfo.barycentricCoord;
+    glm::vec3 passthroughOrigin = ray.origin + ray.t * ray.direction;
 
     return Ray {passthroughOrigin, ray.direction};
 }
