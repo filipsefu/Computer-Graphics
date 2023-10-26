@@ -26,7 +26,7 @@ void sampleSegmentLight(const float& sample, const SegmentLight& light, glm::vec
 {
     // TODO: implement this function.
     position = light.endpoint0 + sample * (light.endpoint1 - light.endpoint0);
-    color = light.color0 * sample + (1 - sample) * light.color1;
+    color = light.color1 * sample + (1 - sample) * light.color0;
 }
 
 // TODO: Standard feature
@@ -41,8 +41,12 @@ void sampleSegmentLight(const float& sample, const SegmentLight& light, glm::vec
 void sampleParallelogramLight(const glm::vec2& sample, const ParallelogramLight& light, glm::vec3& position, glm::vec3& color)
 {
     // TODO: implement this function.
-    position = light.edge01 * sample.x + light.edge02 * sample.y;
-    color = light.color0 * sample.x + (1 - sample.x) * light.color1 + light.color2 * sample.y + (1 - sample.y) * light.color3;
+    position = light.edge01 * sample.x + light.edge02 * sample.y + light.v0;
+
+    color = light.color0 * (1 - sample.x) * (1 - sample.y)
+        + light.color1 * (1 - sample.x) * sample.y
+        + light.color2 * sample.x * sample.y
+        + light.color3 * sample.x * (1 - sample.y);
 }
 
 // TODO: Standard feature
@@ -64,8 +68,19 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
     } else {
         // Shadows are enabled in the renderer
         // TODO: implement this function; currently, the light simply passes through
+
+        bool hit = false;
         
-        return true;
+        for (const auto& mesh : state.scene.meshes)
+            for (const auto& triangle : mesh.triangles) {
+                const auto v0 = mesh.vertices[triangle[0]];
+                const auto v1 = mesh.vertices[triangle[1]];
+                const auto v2 = mesh.vertices[triangle[2]];
+                //hit |= intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo);
+            }
+        for (const auto& sphere : state.scene.spheres)
+            //hit |= intersectRayWithShape(sphere, ray, hitInfo);
+        return hit;
     }
 }
 
