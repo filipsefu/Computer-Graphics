@@ -184,15 +184,14 @@ uint32_t computeAABBLongestAxis(const AxisAlignedBox& aabb)
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 computePrimitiveCentroid(const BVHInterface::Primitive primitive)
 {
-    if (primitive.v0.position.x == NULL || primitive.v1.position.x == NULL || primitive.v2.position.x == NULL) {
-       throw std::invalid_argument("Invalid position data in the primitive.");
-    }
 
-    glm::vec3 v0 = glm::vec3(primitive.v0.position.x, primitive.v0.position.y, primitive.v0.position.z);
-    glm::vec3 v1 = glm::vec3(primitive.v1.position.x, primitive.v1.position.y, primitive.v1.position.z);
-    glm::vec3 v2 = glm::vec3(primitive.v2.position.x, primitive.v2.position.y, primitive.v2.position.z);
+    float x = (primitive.v0.position.x + primitive.v1.position.x + primitive.v2.position.x) / 3.0f;
+    float y = (primitive.v0.position.y + primitive.v1.position.y + primitive.v2.position.y) / 3.0f;
+    float z = (primitive.v0.position.z + primitive.v1.position.z + primitive.v2.position.z) / 3.0f;
 
-    return (v0 + v1 + v2) / 3.0f;
+    glm::vec3 result = glm::vec3(x, y, z);
+
+    return result;
 }
 
 // TODO: Standard feature
@@ -211,11 +210,11 @@ size_t splitPrimitivesByMedian(const AxisAlignedBox& aabb, uint32_t axis, std::s
         return computePrimitiveCentroid(a)[axis] < computePrimitiveCentroid(b)[axis];
     });
 
-   size_t splitIndex = primitives.size() / 2;
+   
     if (primitives.size() % 2 == 0) {
         return primitives.size() / 2;
     }
-    return (primitives.size() +1) / 2;
+    return primitives.size() / 2 + 1;
 }
 
 // TODO: Standard feature
@@ -248,7 +247,7 @@ bool intersectRayWithBVH(RenderState& state, const BVHInterface& bvh, Ray& ray, 
 
     if (state.features.enableAccelStructure) {
         std::queue<uint32_t> nodeQueue;
-        nodeQueue.push(0); // Start with the root node
+        nodeQueue.push(BVH::RootIndex); // Start with the root node
 
         while (!nodeQueue.empty()) {
             uint32_t current = nodeQueue.front();
@@ -264,6 +263,7 @@ bool intersectRayWithBVH(RenderState& state, const BVHInterface& bvh, Ray& ray, 
                     if (intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo)) {
                         updateHitInfo(state, prim, ray, hitInfo);
                         is_hit = true;
+                       // drawAABB(nodes[current].aabb, DrawMode::Wireframe, glm::vec3(1.0f, 0.0f, 0.0f), 1.0f);
                     }
                 }
             } else {
@@ -274,10 +274,12 @@ bool intersectRayWithBVH(RenderState& state, const BVHInterface& bvh, Ray& ray, 
                 if (intersectRayWithShape(leftChild.aabb, ray)) {
                     ray = newRay;
                     nodeQueue.push(currentNode.leftChild());
+                   
                 }
                 if (intersectRayWithShape(rightChild.aabb, ray)) {
                     ray = newRay;
                     nodeQueue.push(currentNode.rightChild());
+                   
                 }
             }
         }
@@ -401,7 +403,12 @@ void BVH::buildRecursive(const Scene& scene, const Features& features, std::span
         // 3. If it is a node:
         // 3a. Split the range of triangles along the longest axis into left and right subspans
         uint32_t axis = computeAABBLongestAxis(aabb);
-        size_t splitIndex = splitPrimitivesByMedian(aabb, axis, primitives);
+        size_t splitIndex;
+        if (!features.extra.enableBvhSahBinning)
+            splitIndex = splitPrimitivesByMedian(aabb, axis, primitives);
+        else {
+            splitIndex = splitPrimitivesBySAHBin(aabb, axis, primitives);
+        }
 
         // 3b. Allocate left/right child nodes
         uint32_t leftChildIndex = nextNodeIdx();
@@ -412,7 +419,7 @@ void BVH::buildRecursive(const Scene& scene, const Features& features, std::span
 
         // 3d. Recursively build left/right child nodes over their respective triangles
         auto leftPrimitives = primitives.subspan(0, splitIndex);
-        auto rightPrimitives = primitives.subspan(splitIndex, primitives.size() - splitIndex);
+        auto rightPrimitives = primitives.subspan(splitIndex);
         buildRecursive(scene, features, leftPrimitives, leftChildIndex, level + 1);
         buildRecursive(scene, features, rightPrimitives, rightChildIndex, level + 1);
     }
@@ -450,7 +457,6 @@ void BVH::debugDrawLevelHelper(int level, int current_level, int position)
     }
     if (level == current_level) {
         drawAABB(m_nodes[position].aabb, DrawMode::Wireframe, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f);
-        printf("%d %d %d\n", level, current_level,position);
         return;
     }
 
@@ -459,6 +465,7 @@ void BVH::debugDrawLevelHelper(int level, int current_level, int position)
             debugDrawLevelHelper(level, current_level + 1, m_nodes[position].leftChild());
             debugDrawLevelHelper(level, current_level + 1, m_nodes[position].rightChild());
         }
+
     }
 
 
