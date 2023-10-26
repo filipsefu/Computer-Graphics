@@ -69,9 +69,18 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
         // Shadows are enabled in the renderer
         // TODO: implement this function; currently, the light simply passes through
 
+        bool hit = false;
         
-        
-        return true;
+        for (const auto& mesh : state.scene.meshes)
+            for (const auto& triangle : mesh.triangles) {
+                const auto v0 = mesh.vertices[triangle[0]];
+                const auto v1 = mesh.vertices[triangle[1]];
+                const auto v2 = mesh.vertices[triangle[2]];
+                //hit |= intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo);
+            }
+        for (const auto& sphere : state.scene.spheres)
+            //hit |= intersectRayWithShape(sphere, ray, hitInfo);
+        return hit;
     }
 }
 
