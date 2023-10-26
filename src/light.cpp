@@ -64,6 +64,7 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
     } else {
         // Shadows are enabled in the renderer
         // TODO: implement this function; currently, the light simply passes through
+        
         return true;
     }
 }
