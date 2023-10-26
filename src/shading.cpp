@@ -147,7 +147,7 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 LinearGradient::sample(float ti) const
 {    
-    if (ti <= -1)
+    if (ti <= 0) //-1
         return this->components.front().color;
 
     if (ti >= 1)
@@ -156,7 +156,7 @@ glm::vec3 LinearGradient::sample(float ti) const
     for (int i = 0; i < this->components.size() - 1; i++) {
         if (ti >= this->components.at(i).t && ti <= this->components.at(i + 1).t)
             //shoudl we resize ti to be in [0,1] ?
-                return this->components.at(i).color + (ti - this->components.at(i).t) / 2 * this->components.at(i + 1).color;
+                return (this->components.at(i + 1).t - ti) * this->components.at(i).color + (ti - this->components.at(i).t) * this->components.at(i + 1).color;
     }
 
     return glm::vec3(0.0f);
@@ -187,11 +187,5 @@ glm::vec3 computeLinearGradientModel(RenderState& state, const glm::vec3& camera
     if (dot(N, L) <= 0)
         return glm::vec3(0.0f, 0.0f, 0.0f);
 
-    float ti = hitInfo.barycentricCoord.x;
-    if (ti == 0)
-        ti = hitInfo.barycentricCoord.y;
-    if (ti == 0)
-        ti = hitInfo.barycentricCoord.z;
-
-    return gradient.sample(ti) * lightColor * dot(N, L);
+    return gradient.sample(cos_theta) * lightColor * dot(N, L);
 }
