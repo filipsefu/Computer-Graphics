@@ -109,9 +109,21 @@ glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec
     if (hitInfo.material.transparency == 1)
         return lightColor;
     
-    // GET BG COLOR
+    Ray r = Ray(lightPosition, ray.direction - lightPosition);
+    HitInfo h = HitInfo();
+    if (state.bvh.intersect(state, r, h))
+    {
+        glm::vec3 pos1 = ray.origin + ray.t * ray.direction;
+        glm::vec3 pos2 = r.origin + r.t * r.direction;
 
-    return result;
+        if (glm::distance(pos1, pos2) > 0.0001f)
+        {
+            result = lightColor * sampleMaterialKd(state, h) * (1 - h.material.transparency);
+        } else {
+            return lightColor;
+        }
+    }
+    return result;  
 }
 
 // TODO: Standard feature
