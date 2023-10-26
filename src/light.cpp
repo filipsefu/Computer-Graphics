@@ -78,7 +78,7 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
             glm::vec3 pos1 = ray.origin + ray.t * ray.direction;
             glm::vec3 pos2 = r.origin + r.t * r.direction;
 
-            if (glm::distance(pos1, pos2) < 0.0001f)
+            if (glm::distance(pos1, pos2) < 1)
                 hit = true;
         }
 
@@ -111,12 +111,13 @@ glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec
     
     Ray r = Ray(lightPosition, ray.direction - lightPosition);
     HitInfo h = HitInfo();
+    //loop
     if (state.bvh.intersect(state, r, h))
     {
         glm::vec3 pos1 = ray.origin + ray.t * ray.direction;
         glm::vec3 pos2 = r.origin + r.t * r.direction;
 
-        if (glm::distance(pos1, pos2) > 0.0001f)
+        if (glm::distance(pos1, pos2) > 1)
         {
             result = lightColor * sampleMaterialKd(state, h) * (1 - h.material.transparency);
         } else {
