@@ -92,13 +92,16 @@ glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection
         return glm::vec3(0.0f, 0.0f, 0.0f);
 
     // check REFLECTION direction
-    glm::vec3 R = normalize(glm::reflect(-L, N));
+    glm::vec3 R = normalize(glm::reflect(L, N));
     glm::vec3 V = normalize(cameraDirection);
 
     if (dot(V, R) <= 0)
         return glm::vec3(0.0f, 0.0f, 0.0f);
 
-    return hitInfo.material.ks * lightColor * glm::pow(dot(V, R), hitInfo.material.shininess);
+    // which way is the lambertian light direction oriented?
+    glm::vec3 diffuse = computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
+
+    return diffuse + hitInfo.material.ks * lightColor * glm::pow(dot(V, R), hitInfo.material.shininess);
 }
 
 // TODO: Standard feature
@@ -130,7 +133,9 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
     if (dot(N, H) <= 0)
         return glm::vec3(0.0f, 0.0f, 0.0f);
 
-    return hitInfo.material.ks * lightColor * glm::pow(dot(N, H), hitInfo.material.shininess);
+    glm::vec3 diffuse = computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
+
+    return diffuse + hitInfo.material.ks * lightColor * glm::pow(dot(N, H), hitInfo.material.shininess);
 }
 
 // TODO: Standard feature
@@ -150,6 +155,7 @@ glm::vec3 LinearGradient::sample(float ti) const
 
     for (int i = 0; i < this->components.size() - 1; i++) {
         if (ti >= this->components.at(i).t && ti <= this->components.at(i + 1).t)
+            //shoudl we resize ti to be in [0,1] ?
                 return this->components.at(i).color + (ti - this->components.at(i).t) / 2 * this->components.at(i + 1).color;
     }
 
