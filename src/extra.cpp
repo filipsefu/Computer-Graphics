@@ -132,8 +132,15 @@ void initializeB(std::span<BVH::Primitive> primitiveInfo,const AxisAlignedBox ce
             buckets[b].bounds = computePrimitiveAABB(primitiveInfo[i]);
         buckets[b].bounds = Union(buckets[b].bounds, computePrimitiveAABB(primitiveInfo[i]));
     }
+}
+
+
+float SurfaceArea(AxisAlignedBox box) 
+    {
+    // Compute and return the surface area of the box
+    return 2 * ((box.upper.x - box.lower.x) * (box.upper.y - box.lower.y) + (box.upper.x - box.lower.x) * (box.upper.z - box.lower.z) + (box.upper.y - box.lower.y) * (box.upper.z - box.lower.z));
     }
-void ComputeSplitCostsWithProbabilities(std::vector<BucketInfo>& buckets, std::vector<float>& cost, const AxisAlignedBox& parentBox,std::span<BVH::Primitive> primitiveInfo)
+    void ComputeSplitCostsWithProbabilities(std::vector<BucketInfo>& buckets, std::vector<float>& cost, const AxisAlignedBox& parentBox,std::span<BVH::Primitive> primitiveInfo)
 {
 
         for (int i = 0; i < nBuckets - 1; ++i) {
@@ -166,11 +173,11 @@ void ComputeSplitCostsWithProbabilities(std::vector<BucketInfo>& buckets, std::v
             }
 
             if (count0 != 0 && count1 != 0)
-                cost[i] = count0 * b0.SurfaceArea() + count1 * b1.SurfaceArea();
+                cost[i] = count0 * SurfaceArea(b0) + count1 * SurfaceArea(b1);
             else if (count0 == 0)
-                cost[i] =  count1 * b1.SurfaceArea();
+                cost[i] =  count1 * SurfaceArea(b1);
             else if (count1 == 0)
-                cost[i] = count0 * b0.SurfaceArea();
+                cost[i] = count0 * SurfaceArea(b0);
           }
       
 }
