@@ -46,8 +46,68 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
         return;
     }
 
-    // ...
+    Screen high(image.resolution());
+    Screen box(image.resolution());
+    Screen result(image.resolution());
+    float epsilon = 0.9f;
+    float epsilon2 = 0.7f;
+
+    // take big values
+    for (int i = 0; i < image.resolution().x; i++)
+    {
+        for (int j = 0; j < image.resolution().y; j++) {
+            int index = image.indexAt(i, j);
+            glm::vec3 color = image.pixels().at(index);
+
+            if (color.x < epsilon2 && color.y < epsilon2 && color.z < epsilon2)
+                color = glm::vec3(0);
+
+            /*if (color.x > epsilon)
+                color.x = 0.0;
+            if (color.y < epsilon)
+                color.y = 0.0;
+            if (color.z < epsilon)
+                color.z = 0.0;*/
+
+            high.setPixel(i, j, color);
+        }
+    }
+
+    //box filter
+    for (int i = 1; i < image.resolution().x - 1; i++) {
+        for (int j = 1; j < image.resolution().y - 1; j++) {
+            int index1 = high.indexAt(i - 1, j - 1);
+            int index2 = high.indexAt(i - 1, j);
+            int index3 = high.indexAt(i - 1, j + 1);
+            int index4 = high.indexAt(i, j - 1);
+            int index5 = high.indexAt(i, j);
+            int index6 = high.indexAt(i, j + 1);
+            int index7 = high.indexAt(i + 1, j - 1);
+            int index8 = high.indexAt(i + 1, j);
+            int index9 = high.indexAt(i + 1, j + 1);
+
+
+            glm::vec3 color = high.pixels().at(index1) + high.pixels().at(index2) + high.pixels().at(index3) + 
+                high.pixels().at(index4) + high.pixels().at(index5) + high.pixels().at(index6) +
+                high.pixels().at(index7) + high.pixels().at(index8) + high.pixels().at(index9);
+            color /= 9;
+            box.setPixel(i, j, color);
+        }
+    }
+
+    //add result to original
+    for (int i = 0; i < image.resolution().x; i++) {
+        for (int j = 0; j < image.resolution().y; j++) {
+            int index = image.indexAt(i, j);
+            glm::vec3 color = image.pixels().at(index) + box.pixels().at(index);
+            color = glm::vec3(glm::min(1.0f, color.x), glm::min(1.0f, color.y), glm::min(1.0f, color.z));
+            result.setPixel(i, j, color);
+        }
+    }
+    image = result;
 }
+
+
 
 
 // TODO; Extra feature
