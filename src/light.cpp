@@ -69,20 +69,25 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
         // Shadows are enabled in the renderer
         // TODO: implement this function; currently, the light simply passes through
 
-        bool hit = false;
+        glm::vec3 pos1 = ray.origin + ray.t * ray.direction;
 
-        Ray r = Ray(lightPosition, ray.direction - lightPosition);
-        HitInfo h = HitInfo();
 
-        if (state.bvh.intersect(state, r, h)) {
-            glm::vec3 pos1 = ray.origin + ray.t * ray.direction;
-            glm::vec3 pos2 = r.origin + r.t * r.direction;
+        Ray rayShadow = Ray(lightPosition, ray.origin);
+        HitInfo hitInfoShadow = HitInfo();
 
-            if (glm::distance(pos1, pos2) < 0.75)
-                hit = true;
-        }
+        bool hit = state.bvh.intersect(state, rayShadow, hitInfoShadow);
+        float epsilon = 0.0001f;
 
-        return hit;
+        glm::vec3 pos2 = rayShadow.origin + rayShadow.t * rayShadow.direction;
+
+        if (hit && rayShadow.t < glm::distance(ray.origin, lightPosition))
+            return false;
+
+        //if( hit && rayShadow.t < ray.t)
+        //if (hit && glm::distance(pos1, pos2) < epsilon)
+        //if (hit && rayShadow.t < glm::distance(ray.origin, lightPosition))
+
+        return true;
     }
 }
 
