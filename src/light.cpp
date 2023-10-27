@@ -72,7 +72,7 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
         glm::vec3 pos1 = ray.origin + ray.t * ray.direction;
 
 
-        Ray rayShadow = Ray(ray.origin, lightPosition - ray.origin);
+        Ray rayShadow = Ray(lightPosition, pos1 - lightPosition);
         HitInfo hitInfoShadow = HitInfo();
 
         bool hit = state.bvh.intersect(state, rayShadow, hitInfoShadow);
@@ -80,11 +80,18 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
 
         glm::vec3 pos2 = rayShadow.origin + rayShadow.t * rayShadow.direction;
 
-        drawRay(ray, glm::vec3(1, 1, 1));
-        if (hit && epsilon < glm::distance(lightPosition, ray.origin) - rayShadow.t) {
-            drawRay(rayShadow, glm::vec3(1, 0, 0));
+        drawRay(rayShadow, glm::vec3(1, 0.5, 0.5));
+
+        if (hit && glm::distance(pos1, pos2) > epsilon) {
+            //GREEN light RED shadow 
+            //drawRay(Ray(pos2, lightPosition - pos2), glm::vec3(0, 1, 0));
+            //drawRay(Ray(pos2, pos2 - lightPosition), glm::vec3(1, 0, 0));
             return false;
         }
+
+        // BLUE red ray when NO shadow
+        drawRay(Ray(pos1, lightPosition - pos1), glm::vec3(0, 0, 1));
+        drawRay(Ray(pos1, pos1 - lightPosition), glm::vec3(1, 0, 0));
 
         //if( hit && rayShadow.t < ray.t)
         //if (hit && glm::distance(pos1, pos2) < epsilon)
