@@ -33,6 +33,7 @@ struct Scene {
     std::vector<Mesh> meshes;
     std::vector<Sphere> spheres;
     std::vector<SceneLight> lights;
+    std::vector<std::shared_ptr<Image>> environmentMap;
 
     // You can add your own objects (e.g. environment maps) here
     // ...
