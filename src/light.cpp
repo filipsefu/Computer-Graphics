@@ -78,7 +78,7 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
             glm::vec3 pos1 = ray.origin + ray.t * ray.direction;
             glm::vec3 pos2 = r.origin + r.t * r.direction;
 
-            if (glm::distance(pos1, pos2) < 1)
+            if (glm::distance(pos1, pos2) < 0.75)
                 hit = true;
         }
 
