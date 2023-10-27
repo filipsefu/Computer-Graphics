@@ -82,18 +82,18 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
 {
    if (state.features.extra.enableEnvironmentMap) {
 
-        AxisAlignedBox boxOfEnviroment { glm::vec3(-1.0f), glm::vec3 { 1.0f } };
-        Ray rayShooted { glm::vec3 { 0.0f }, ray.direction, std::numeric_limits<float>::max()};
-        intersectRayWithShape(boxOfEnviroment, rayShooted);
-        glm::vec3 intersectPoint = rayShooted.origin + rayShooted.direction * rayShooted.t;
+        AxisAlignedBox enviroment { glm::vec3(-1.0f), glm::vec3 { 1.0f } };
+        Ray shot { glm::vec3 { 0.0f }, ray.direction, std::numeric_limits<float>::max()};
+        intersectRayWithShape(enviroment, shot);
+        glm::vec3 intersect = shot.origin + shot.direction * shot.t;
 
-        float absX = abs(intersectPoint.x);
-        float absY = abs(intersectPoint.y);
-        float absZ = abs(intersectPoint.z);
+        float absX = abs(intersect.x);
+        float absY = abs(intersect.y);
+        float absZ = abs(intersect.z);
 
-        int isXPositive = intersectPoint.x > 0 ? 1 : 0;
-        int isYPositive = intersectPoint.y > 0 ? 1 : 0;
-        int isZPositive = intersectPoint.z > 0 ? 1 : 0;
+        int isXPositive = intersect.x > 0 ? 1 : 0;
+        int isYPositive = intersect.y > 0 ? 1 : 0;
+        int isZPositive = intersect.z > 0 ? 1 : 0;
 
         float maxAxis, uc, vc;
         int face = 0;
@@ -102,8 +102,8 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
             // u (0 to 1) goes from +z to -z
             // v (0 to 1) goes from -y to +y
             maxAxis = absX;
-            uc = -intersectPoint.z;
-            vc = intersectPoint.y;
+            uc = -intersect.z;
+            vc = intersect.y;
             face = 0;
            
         }
@@ -112,8 +112,8 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
             // u (0 to 1) goes from -z to +z
             // v (0 to 1) goes from -y to +y
             maxAxis = absX;
-            uc = intersectPoint.z;
-            vc = intersectPoint.y;
+            uc = intersect.z;
+            vc = intersect.y;
             face = 1;
            
         }
@@ -122,8 +122,8 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
             // u (0 to 1) goes from -x to +x
             // v (0 to 1) goes from +z to -z
             maxAxis = absY;
-            uc = intersectPoint.x;
-            vc = -intersectPoint.z;
+            uc = intersect.x;
+            vc = -intersect.z;
             face = 2;
            
         }
@@ -132,8 +132,8 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
             // u (0 to 1) goes from -x to +x
             // v (0 to 1) goes from -z to +z
             maxAxis = absY;
-            uc = intersectPoint.x;
-            vc = intersectPoint.z;
+            uc = intersect.x;
+            vc = intersect.z;
             face = 3;
            
         }
@@ -142,8 +142,8 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
             // u (0 to 1) goes from -x to +x
             // v (0 to 1) goes from -y to +y
             maxAxis = absZ;
-            uc = intersectPoint.x;
-            vc = intersectPoint.y;
+            uc = intersect.x;
+            vc = intersect.y;
             face = 4;
            
         }
@@ -152,8 +152,8 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
             // u (0 to 1) goes from +x to -x
             // v (0 to 1) goes from -y to +y
             maxAxis = absZ;
-            uc = -intersectPoint.x;
-            vc = intersectPoint.y;
+            uc = -intersect.x;
+            vc = intersect.y;
             face = 5;
             
         }
