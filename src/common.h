@@ -34,6 +34,11 @@ struct Plane {
 struct AxisAlignedBox {
     glm::vec3 lower { 0.0f };
     glm::vec3 upper { 1.0f };
+    float SurfaceArea() const
+    {
+        // Compute and return the surface area of the box
+        return 2 * ((upper.x - lower.x) * (upper.y - lower.y) + (upper.x - lower.x) * (upper.z - lower.z) + (upper.y - lower.y) * (upper.z - lower.z));
+    }
 };
 
 struct Sphere {
