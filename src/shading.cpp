@@ -91,17 +91,15 @@ glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection
     if (dot(N, L) <= 0)
         return glm::vec3(0.0f, 0.0f, 0.0f);
 
-    // check REFLECTION direction
-    glm::vec3 R = normalize(glm::reflect(L, N));
+    glm::vec3 R = normalize(glm::reflect(-L, N));
     glm::vec3 V = normalize(cameraDirection);
 
-    if (dot(V, R) <= 0)
-        return glm::vec3(0.0f, 0.0f, 0.0f);
+    /*if (dot(V, R) <= 0)
+        return glm::vec3(0.0f, 0.0f, 0.0f);*/
 
-    // which way is the lambertian light direction oriented?
     glm::vec3 diffuse = computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
 
-    return diffuse + hitInfo.material.ks * lightColor * glm::pow(dot(V, R), hitInfo.material.shininess);
+    return diffuse + hitInfo.material.ks * lightColor * glm::pow(glm::max(0.0f, dot(V, R)), hitInfo.material.shininess);
 }
 
 // TODO: Standard feature
@@ -148,18 +146,18 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
 glm::vec3 LinearGradient::sample(float ti) const
 {    
     if (ti <= 0) //-1
-        return this->components.front().color;
+        return components.front().color;
 
     if (ti >= 1)
-        return this->components.back().color;
+        return components.back().color;
 
-    for (int i = 0; i < this->components.size() - 1; i++) {
-        if (ti >= this->components.at(i).t && ti <= this->components.at(i + 1).t)
-            //shoudl we resize ti to be in [0,1] ?
-                return (this->components.at(i + 1).t - ti) * this->components.at(i).color + (ti - this->components.at(i).t) * this->components.at(i + 1).color;
+    for (int i = 0; i < components.size() - 1; i++) {
+        if (ti >= components.at(i).t && ti <= components.at(i + 1).t)
+                return (components.at(i + 1).t - ti) / (components.at(i+1).t - components.at(i).t) * components.at(i).color +
+            (ti - components.at(i).t) / (components.at(i+1).t - components.at(i).t) * components.at(i + 1).color;
     }
 
-    return glm::vec3(0.0f);
+    return components.back().color;
 }
 
 // TODO: Standard feature
@@ -187,5 +185,5 @@ glm::vec3 computeLinearGradientModel(RenderState& state, const glm::vec3& camera
     if (dot(N, L) <= 0)
         return glm::vec3(0.0f, 0.0f, 0.0f);
 
-    return gradient.sample(cos_theta) * lightColor * dot(N, L);
+    return gradient.sample(dot(N, L)) * lightColor * dot(N, L);
 }
