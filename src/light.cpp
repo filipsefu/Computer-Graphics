@@ -41,7 +41,7 @@ void sampleSegmentLight(const float& sample, const SegmentLight& light, glm::vec
 void sampleParallelogramLight(const glm::vec2& sample, const ParallelogramLight& light, glm::vec3& position, glm::vec3& color)
 {
     // TODO: implement this function.
-    position = light.edge01 * sample.x + light.edge02 * sample.y; //    +light.v0;
+    position = light.edge01 * sample.x + light.edge02 * sample.y + light.v0;
 
     color = light.color0 * (1 - sample.x) * (1 - sample.y)
         + light.color1 * sample.x * (1 - sample.y)
@@ -80,8 +80,11 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
 
         glm::vec3 pos2 = rayShadow.origin + rayShadow.t * rayShadow.direction;
 
-        if (hit && epsilon < glm::distance(lightPosition, ray.origin) - rayShadow.t)
+        drawRay(ray, glm::vec3(1, 1, 1));
+        if (hit && epsilon < glm::distance(lightPosition, ray.origin) - rayShadow.t) {
+            drawRay(rayShadow, glm::vec3(1, 0, 0));
             return false;
+        }
 
         //if( hit && rayShadow.t < ray.t)
         //if (hit && glm::distance(pos1, pos2) < epsilon)
@@ -108,6 +111,7 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec3& lightPosition, const glm::vec3& lightColor, const Ray& ray, const HitInfo& hitInfo)
 {
+    return lightColor;
     // TODO: implement this function; currently, the light simply passes through
     glm::vec3 result = lightColor * sampleMaterialKd(state, hitInfo) * (1 - hitInfo.material.transparency);
 
@@ -186,10 +190,12 @@ glm::vec3 computeContributionSegmentLight(RenderState& state, const SegmentLight
         sampleSegmentLight(state.sampler.next_1d(), light, position, color);
 
         if (visibilityOfLightSampleBinary(state, position, color, ray, hitInfo)) {
-        glm::vec3 p = ray.origin + ray.t * ray.direction;
-        glm::vec3 l = glm::normalize(position - p);
-        glm::vec3 v = -ray.direction;
-        shading += computeShading(state, v, l, color, hitInfo);
+            glm::vec3 p = ray.origin + ray.t * ray.direction;
+            glm::vec3 l = glm::normalize(position - p);
+            glm::vec3 v = -ray.direction;
+            shading += computeShading(state, v, l, color, hitInfo);
+
+            drawRay(Ray(p, position - p), color);
         }
     }
 
@@ -226,7 +232,10 @@ glm::vec3 computeContributionParallelogramLight(RenderState& state, const Parall
     {
         glm::vec3 position = glm::vec3(0);
         glm::vec3 color = glm::vec3(0);
-        sampleParallelogramLight(state.sampler.next_2d(), light, position, color);    
+        sampleParallelogramLight(state.sampler.next_2d(), light, position, color);
+
+        drawRay(Ray(ray.origin + ray.t * ray.direction, position - ray.origin - ray.t * ray.direction), color);
+
 
         if (visibilityOfLightSampleBinary(state, position, color, ray, hitInfo)) {
             glm::vec3 p = ray.origin + ray.t * ray.direction;
