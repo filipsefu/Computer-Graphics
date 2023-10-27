@@ -4,6 +4,8 @@
 #include "recursive.h"
 #include "shading.h"
 #include <framework/trackball.h>
+#include <algorithm>
+#include <cmath>
 
 // TODO; Extra feature
 // Given the same input as for `renderImage()`, instead render an image with your own implementation
@@ -93,9 +95,142 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
 // - primitives; the modifiable range of triangles that requires splitting
 // - return;     the split position of the modified range of triangles
 // This method is unit-tested, so do not change the function signature.
+struct BucketInfo {
+    int count = 0;
+    std::vector<BVH::Primitive> prim;
+    AxisAlignedBox bounds;
+};
+AxisAlignedBox Union(AxisAlignedBox a, AxisAlignedBox b)
+{
+    AxisAlignedBox result;
+    result.lower.x = std::min(a.lower.x, b.lower.x);
+    result.lower.y = std::min(a.lower.y, b.lower.y);
+    result.lower.z = std::min(a.lower.z, b.lower.z);
+    result.upper.x = std::max(a.upper.x, b.upper.x);
+    result.upper.y = std::max(a.upper.y, b.upper.y);
+    result.upper.z = std::max(a.upper.z, b.upper.z);
+
+    return result;
+}
+constexpr int nBuckets = 8;
+//For each primitive in the range, we determine the bucket that its centroid lies in and update the bucket�s bounds to include the primitive�s bounds.
+void initializeB(std::span<BVH::Primitive> primitiveInfo,const AxisAlignedBox centroidBounds, uint32_t axis, std::vector<BucketInfo> &buckets)
+    {
+    for (int i = 0; i < primitiveInfo.size(); ++i) {
+
+        float centroid = computePrimitiveCentroid(primitiveInfo[i])[axis];
+
+        int b = nBuckets * ((centroid - centroidBounds.lower[axis]) / (centroidBounds.upper[axis] - centroidBounds.lower[axis]));
+
+        if (b == nBuckets)
+            b = nBuckets - 1;
+
+        buckets[b].count++;
+        buckets[b].prim.push_back(primitiveInfo[i]);
+
+        if (buckets[b].count == 1)
+            buckets[b].bounds = computePrimitiveAABB(primitiveInfo[i]);
+        buckets[b].bounds = Union(buckets[b].bounds, computePrimitiveAABB(primitiveInfo[i]));
+    }
+}
+
+
+float SurfaceArea(AxisAlignedBox box) 
+    {
+    // Compute and return the surface area of the box
+    return 2 * ((box.upper.x - box.lower.x) * (box.upper.y - box.lower.y) + (box.upper.x - box.lower.x) * (box.upper.z - box.lower.z) + (box.upper.y - box.lower.y) * (box.upper.z - box.lower.z));
+    }
+    void ComputeSplitCostsWithProbabilities(std::vector<BucketInfo>& buckets, std::vector<float>& cost, const AxisAlignedBox& parentBox,std::span<BVH::Primitive> primitiveInfo)
+{
+
+        for (int i = 0; i < nBuckets - 1; ++i) {
+            AxisAlignedBox b0, b1;
+            b0.upper.x = -FLT_MAX;
+            b0.upper.x = -FLT_MAX;
+            b0.upper.x = -FLT_MAX;
+            b0.lower.x = FLT_MAX;
+            b0.lower.x = FLT_MAX;
+            b0.lower.x = FLT_MAX;
+
+            b1.upper.x = -FLT_MAX;
+            b1.upper.x = -FLT_MAX;
+            b1.upper.x = -FLT_MAX;
+            b1.lower.x = FLT_MAX;
+            b1.lower.x = FLT_MAX;
+            b1.lower.x = FLT_MAX;
+        
+            int count0 = 0, count1 = 0;
+            for (int j = 0; j <= i; ++j)
+            {
+                b0 = Union(b0, buckets[j].bounds);
+                count0 += buckets[j].count;
+            }
+
+            for (int j = i + 1; j < nBuckets; ++j)
+            {
+                b1 = Union(b1, buckets[j].bounds);
+                count1 += buckets[j].count;
+            }
+
+            if (count0 != 0 && count1 != 0)
+                cost[i] = count0 * SurfaceArea(b0) + count1 * SurfaceArea(b1);
+            else if (count0 == 0)
+                cost[i] =  count1 * SurfaceArea(b1);
+            else if (count1 == 0)
+                cost[i] = count0 * SurfaceArea(b0);
+          }
+      
+}
+
+size_t FindMinCostSplitBucket(std::vector<float> &cost, float& minCost)
+{
+    minCost = cost[0];
+    size_t minCostSplitBucket = 0;
+    for (size_t i = 0; i < nBuckets - 1; ++i) {
+            if (cost[i] <= minCost) {
+            minCost = cost[i];
+            minCostSplitBucket = i;
+        }
+    }
+    return minCostSplitBucket;
+}
 size_t splitPrimitivesBySAHBin(const AxisAlignedBox& aabb, uint32_t axis, std::span<BVH::Primitive> primitives)
 {
-    using Primitive = BVH::Primitive;
+    std::vector<BucketInfo> buckets(nBuckets);
+    for (int i = 0; i < nBuckets; i++)
+    {
+        buckets[i].bounds.upper.x = -FLT_MAX;
+        buckets[i].bounds.upper.x = -FLT_MAX;
+        buckets[i].bounds.upper.x = -FLT_MAX;
+        buckets[i].bounds.lower.x = FLT_MAX;
+        buckets[i].bounds.lower.x = FLT_MAX;
+        buckets[i].bounds.lower.x = FLT_MAX;
+    }
+    // Initialize BucketInfo for SAH partition buckets
+    initializeB(primitives, aabb, axis, buckets);
 
-    return 0; // This is clearly not the solution
+    // Compute costs for splitting after each bucket with probabilities
+    std::vector<float> cost(nBuckets - 1);
+    ComputeSplitCostsWithProbabilities(buckets, cost, aabb, primitives);
+
+    float minCost;
+    size_t minCostSplitBucket = FindMinCostSplitBucket(cost, minCost);
+
+    // Return the best split position
+    size_t sum = 0;
+    size_t poz = 0;
+
+    for (int i = 0; i < nBuckets; i++)
+    {
+        for (int j = 0; j < buckets[i].prim.size(); j++)
+        {
+            primitives[poz] = buckets[i].prim[j];
+            poz++;
+        }
+        if (i <=  minCostSplitBucket )
+        sum = sum + buckets[i].count;
+    }
+    if (sum == primitives.size())
+        return splitPrimitivesByMedian(aabb, axis, primitives);
+    return sum;
 }
