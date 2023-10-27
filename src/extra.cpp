@@ -91,7 +91,7 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
 // As an alternative to `splitPrimitivesByMedian`, use a SAH+binning splitting criterion. Refer to
 // the `Data Structures` lecture for details on this metric.
 // - aabb;       the axis-aligned bounding box around the given triangle set
-// - axis;       0, 1, or 2, determining on which axis (x, y, or z) yyythe split must happen
+// - axis;       0, 1, or 2, determining on which axis (x, y, or z) the split must happen
 // - primitives; the modifiable range of triangles that requires splitting
 // - return;     the split position of the modified range of triangles
 // This method is unit-tested, so do not change the function signature.
@@ -113,7 +113,7 @@ AxisAlignedBox Union(AxisAlignedBox a, AxisAlignedBox b)
     return result;
 }
 constexpr int nBuckets = 8;
-//For each primitive in the range, we determine the bucket that its centroid lies in and update the bucket’s bounds to include the primitive’s bounds.
+//For each primitive in the range, we determine the bucket that its centroid lies in and update the bucketï¿½s bounds to include the primitiveï¿½s bounds.
 void initializeB(std::span<BVH::Primitive> primitiveInfo,const AxisAlignedBox centroidBounds, uint32_t axis, std::vector<BucketInfo> &buckets)
     {
     for (int i = 0; i < primitiveInfo.size(); ++i) {
