@@ -6,6 +6,8 @@
 #include <framework/trackball.h>
 #include <algorithm>
 #include <cmath>
+#include <intersect.h>
+#include <texture.h>
 
 // TODO; Extra feature
 // Given the same input as for `renderImage()`, instead render an image with your own implementation
@@ -138,9 +140,88 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
 // not go on a hunting expedition for your implementation, so please keep it here!
 glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
 {
-    if (state.features.extra.enableEnvironmentMap) {
-        // Part of your implementation should go here
-        return glm::vec3(0.f);
+   if (state.features.extra.enableEnvironmentMap) {
+
+        AxisAlignedBox enviroment { glm::vec3(-1.0f), glm::vec3 { 1.0f } };
+        Ray shot { glm::vec3 { 0.0f }, ray.direction, std::numeric_limits<float>::max()};
+        intersectRayWithShape(enviroment, shot);
+        glm::vec3 intersect = shot.origin + shot.direction * shot.t;
+
+        float absX = abs(intersect.x);
+        float absY = abs(intersect.y);
+        float absZ = abs(intersect.z);
+
+        int isXPositive = intersect.x > 0 ? 1 : 0;
+        int isYPositive = intersect.y > 0 ? 1 : 0;
+        int isZPositive = intersect.z > 0 ? 1 : 0;
+
+        float maxAxis, uc, vc;
+        int face = 0;
+
+        if (isXPositive && absX >= absY && absX >= absZ) {
+            // u (0 to 1) goes from +z to -z
+            // v (0 to 1) goes from -y to +y
+            maxAxis = absX;
+            uc = -intersect.z;
+            vc = intersect.y;
+            face = 0;
+           
+        }
+        // NEGATIVE X
+        if (!isXPositive && absX >= absY && absX >= absZ) {
+            // u (0 to 1) goes from -z to +z
+            // v (0 to 1) goes from -y to +y
+            maxAxis = absX;
+            uc = intersect.z;
+            vc = intersect.y;
+            face = 1;
+           
+        }
+        // POSITIVE Y
+        if (isYPositive && absY >= absX && absY >= absZ) {
+            // u (0 to 1) goes from -x to +x
+            // v (0 to 1) goes from +z to -z
+            maxAxis = absY;
+            uc = intersect.x;
+            vc = -intersect.z;
+            face = 2;
+           
+        }
+        // NEGATIVE Y
+        if (!isYPositive && absY >= absX && absY >= absZ) {
+            // u (0 to 1) goes from -x to +x
+            // v (0 to 1) goes from -z to +z
+            maxAxis = absY;
+            uc = intersect.x;
+            vc = intersect.z;
+            face = 3;
+           
+        }
+        // POSITIVE Z
+        if (isZPositive && absZ >= absX && absZ >= absY) {
+            // u (0 to 1) goes from -x to +x
+            // v (0 to 1) goes from -y to +y
+            maxAxis = absZ;
+            uc = intersect.x;
+            vc = intersect.y;
+            face = 4;
+           
+        }
+        // NEGATIVE Z
+        if (!isZPositive && absZ >= absX && absZ >= absY) {
+            // u (0 to 1) goes from +x to -x
+            // v (0 to 1) goes from -y to +y
+            maxAxis = absZ;
+            uc = -intersect.x;
+            vc = intersect.y;
+            face = 5;
+            
+        }
+
+        // Convert range from -1 to 1 to 0 to 1
+        float u = 0.5f * (uc / maxAxis + 1.0f);
+        float v = 0.5f * (vc / maxAxis + 1.0f);
+        return sampleTextureNearest(*state.scene.environmentMap[face], glm::vec2 { u, v });
     } else {
         return glm::vec3(0.f);
     }
