@@ -65,9 +65,32 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
 // not go on a hunting expedition for your implementation, so please keep it here!
 void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
+
+    glm::vec3 r = glm::reflect(ray.direction, hitInfo.normal);
+
+    // Find a vector orthogonal to r
+
+    glm::vec3 orthogonalVector;
+    if (r.x == 0) {
+        orthogonalVector.x = 1;
+        orthogonalVector.y = -r.z;
+        orthogonalVector.z = r.y;
+    } else if (r.y == 0) {
+        orthogonalVector.x = -r.z;
+        orthogonalVector.y = 1;
+        orthogonalVector.z = r.x;
+    } else {
+        orthogonalVector.x = r.y;
+        orthogonalVector.y = -r.x;
+        orthogonalVector.z = 0;
+    }
+  
+
     // Generate an initial specular ray, and base secondary glossies on this ray
     // auto numSamples = state.features.extra.numGlossySamples;
     // ...
+    // Generate an initial specular ray, and base secondary glossies on this ray
+    
 }
 
 // TODO; Extra feature
