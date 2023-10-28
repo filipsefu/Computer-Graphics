@@ -66,25 +66,52 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
 void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
 
-    glm::vec3 r = glm::reflect(ray.direction, hitInfo.normal);
-
-    // Find a vector orthogonal to r
+    glm::vec3 reflectedRay = glm::reflect(ray.direction, hitInfo.normal);
+    glm::vec3 pointOfIntersection = ray.origin + ray.t * ray.direction;
+    glm::vec3 glossyAccumulator;
+    float miscelaneous = FLT_EPSILON;
 
     glm::vec3 orthogonalVector;
-    if (r.x == 0) {
+    if (reflectedRay.x == 0) {
         orthogonalVector.x = 1;
-        orthogonalVector.y = -r.z;
-        orthogonalVector.z = r.y;
-    } else if (r.y == 0) {
-        orthogonalVector.x = -r.z;
+        orthogonalVector.y = -reflectedRay.z;
+        orthogonalVector.z = reflectedRay.y;
+    } else if (reflectedRay.y == 0) {
+        orthogonalVector.x = -reflectedRay.z;
         orthogonalVector.y = 1;
-        orthogonalVector.z = r.x;
+        orthogonalVector.z = reflectedRay.x;
     } else {
-        orthogonalVector.x = r.y;
-        orthogonalVector.y = -r.x;
+        orthogonalVector.x = reflectedRay.y;
+        orthogonalVector.y = -reflectedRay.x;
         orthogonalVector.z = 0;
     }
-  
+    glm::vec3 orthogonalBasis = glm::cross(orthogonalVector, reflectedRay);
+    orthogonalBasis = glm::normalize(orthogonalBasis);
+
+    for (int i = 0; i < state.features.extra.numGlossySamples; i++) {
+
+        //Two random between 
+        glm::vec2 sampler = state.sampler.next_2d();
+
+        float circleRadius = glm::sqrt(sampler.y) * hitInfo.material.shininess / 64.0f;
+        float formulaAngle = 2 * glm::pi<float>() * sampler.x;
+
+        //Calculation of U and V for the formula
+        float u = circleRadius * glm::cos(formulaAngle);
+        float v = circleRadius * glm::sin(formulaAngle);
+
+        //Calculation fo the formula
+        glm::vec3 reflectedRayPrime = reflectedRay + u * orthogonalVector + v * orthogonalBasis;
+        reflectedRayPrime = glm::normalize(reflectedRayPrime);
+
+        //If the light is not from behind
+        if (glm::dot(hitInfo.normal, reflectedRayPrime) > 0)
+            glossyAccumulator = glossyAccumulator + renderRay(state, Ray(pointOfIntersection + miscelaneous * reflectedRayPrime, reflectedRayPrime), rayDepth + 1);
+    }
+
+    hitColor = hitColor + hitInfo.material.ks * glossyAccumulator;
+   
+
 
     // Generate an initial specular ray, and base secondary glossies on this ray
     // auto numSamples = state.features.extra.numGlossySamples;
@@ -226,8 +253,10 @@ void initializeB(std::span<BVH::Primitive> primitiveInfo,const AxisAlignedBox ce
 
         int b = nBuckets * ((centroid - centroidBounds.lower[axis]) / (centroidBounds.upper[axis] - centroidBounds.lower[axis]));
 
-        if (b == nBuckets)
+        if (b >= nBuckets)
             b = nBuckets - 1;
+        if (b <= nBuckets)
+            b = 0;
 
         buckets[b].count++;
         buckets[b].prim.push_back(primitiveInfo[i]);
@@ -334,7 +363,7 @@ size_t splitPrimitivesBySAHBin(const AxisAlignedBox& aabb, uint32_t axis, std::s
         if (i <=  minCostSplitBucket )
         sum = sum + buckets[i].count;
     }
-    if (sum == primitives.size())
+    if (sum == primitives.size() || sum == 0)
         return splitPrimitivesByMedian(aabb, axis, primitives);
     return sum;
 }
