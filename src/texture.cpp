@@ -84,7 +84,7 @@ glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
     //Linear interpolation on lower section
     glm::vec3 interpolationLower = (1.0f - offsetX) * texelBL + (0.0f + offsetX) * texelBR;
     //Interpolate upper/lower
-    glm::vec3 interpolatedTexture = (1.0f - offsetY) * interpolationUpper + (0.0f + offsetY) * interpolationLower;
+    glm::vec3 interpolatedTexture = (1.0f - offsetY) * interpolationLower + (0.0f + offsetY) * interpolationUpper;
 
     //glm::vec3 interpolatedTexture = ((1.0f - offsetY) * //(1-B)
     //                                    ((1.0f - offsetX) * texelTL + //(1-A) * TopLeft
