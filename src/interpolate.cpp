@@ -3,6 +3,7 @@
 
 float findArea(const glm::vec3& v0, const glm::vec3& v1)
 {
+    //Use equation: .5 * the magnitude of the cross of 2 / 3 vectors which make up the triangle
     return 0.5f * glm::length(glm::cross(v0, v1));
 }
 
@@ -22,7 +23,7 @@ glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, cons
     float beta;
     float gamma;
 
-    //Compute necessary vectors
+    //Compute vectors
     glm::vec3 v0P = p - v0;
     glm::vec3 v0v1 = v1 - v0;
     glm::vec3 v0v2 = v2 - v0;
@@ -40,6 +41,7 @@ glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, cons
     float areaBeta = findArea(v2P, v2v0);
     float areaGamma = findArea(v0P, v0v1);
 
+    //Prevent division by 0
     if (totalArea == 0) {
         return glm::vec3(0);
     }
@@ -62,6 +64,7 @@ glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, cons
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 interpolateNormal(const glm::vec3& n0, const glm::vec3& n1, const glm::vec3& n2, const glm::vec3 bc)
 {
+    //bc contains the weights of each normal so simply multiply them accordingly, then add.
     glm::vec3 interpolatedNormal = n0 * bc.x + n1 * bc.y + n2 * bc.z;
     return glm::normalize(interpolatedNormal);
 }
@@ -76,6 +79,7 @@ glm::vec3 interpolateNormal(const glm::vec3& n0, const glm::vec3& n1, const glm:
 // This method is unit-tested, so do not change the function signature.
 glm::vec2 interpolateTexCoord(const glm::vec2& t0, const glm::vec2& t1, const glm::vec2& t2, const glm::vec3 bc)
 {
+    //check interpolateNormal for explanation
     glm::vec2 interpolatedCoord = t0 * bc.x + t1 * bc.y + t2 * bc.z; 
     return interpolatedCoord;
 }
