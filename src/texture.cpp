@@ -18,16 +18,18 @@ glm::vec3 sampleTextureNearest(const Image& image, const glm::vec2& texCoord)
     // Given texcoords, return the corresponding pixel of the image
 
     // Convert texCoord to pixel index. For TextureNearest you only need to use the integer part to find it's index. (indices range from 0 to width/height - 1)
-
-    int pixelx_idx = std::floor(texCoord.x * (image.width));
-    int pixely_idx = std::floor(texCoord.y * (image.height));
+    glm::vec2 texCoordsShow = texCoord;
+    //int pixelx_idx = std::floor(texCoord.x * (image.width));
+    //int pixely_idx = std::floor(texCoord.y * (image.height));
+    int pixelx_idx = (texCoord.x * (image.width));
+    int pixely_idx = (texCoord.y * (image.height));
 
     // Clamp to image indices (texture coordinate (1,1) maps to (4,4) but should map to (3,3)), this will set the maximum allowed value to (3,3).
     pixelx_idx = glm::clamp(pixelx_idx, 0, image.width - 1);
     pixely_idx = glm::clamp(pixely_idx, 0, image.height - 1);
 
     // Convert (i,j) to index using lecture method
-    int pixelIndex = pixely_idx * image.width + pixelx_idx;
+    int pixelIndex = (pixely_idx * image.width + pixelx_idx);
 
     return image.pixels[pixelIndex];
 }
