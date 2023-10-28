@@ -19,8 +19,8 @@ glm::vec3 sampleTextureNearest(const Image& image, const glm::vec2& texCoord)
 
     //Convert texCoord to index. Multiply by width/height - 1 to account for indices starting at 0.
     //Since images stored upside down, invert y coordinate.
-    int xPos = (texCoord.x * (image.width - 1));
-    int yPos = (1.0f - texCoord.y) * (image.height - 1);
+    float xPos = (texCoord.x * (image.width - 1));
+    float yPos = (1.0f - texCoord.y) * (image.height - 1);
 
     int nearestX = std::round(xPos);
     int nearestY = std::round(yPos);
@@ -47,8 +47,8 @@ glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
 {
     // Pixel Location - Same method as NN to find index of top left corner of pixel 
 
-    int xPos = (texCoord.x * (image.width - 1));
-    int yPos = (1.0f - texCoord.y) * (image.height - 1);
+    float xPos = (texCoord.x * (image.width - 1));
+    float yPos = (1.0f - texCoord.y) * (image.height - 1);
 
     //Use floor instead of round such that you get the top left texel
 
@@ -59,8 +59,8 @@ glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
     // The offset is calculated by subtracting the integer value from the full decimal value of the coordinate. 
     // Here I do this by subtracting the idx value of the top left texel (i,j) from the true xPos and yPos
 
-    int offsetX = xPos - xTL; //alpha
-    int offsetY = yPos - yTL; //beta
+    float offsetX = xPos - xTL; //alpha
+    float offsetY = yPos - yTL; //beta
 
     // Indexes of other neighbours. 
     // Make sure to clamp to ensure there is no unexpected behaviour at the borders.
@@ -80,19 +80,11 @@ glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
 
 
     //Linear interpolation on upper section
-    glm::vec3 interpolationUpper = (1.0f - offsetX) * texelTL + (0.0f + offsetX) * texelTR;
+    glm::vec3 interpolationUpper = (1.0f - offsetX) * texelTL + (offsetX) * texelTR;
     //Linear interpolation on lower section
-    glm::vec3 interpolationLower = (1.0f - offsetX) * texelBL + (0.0f + offsetX) * texelBR;
+    glm::vec3 interpolationLower = (1.0f - offsetX) * texelBL + (offsetX) * texelBR;
     //Interpolate upper/lower
-    glm::vec3 interpolatedTexture = (1.0f - offsetY) * interpolationLower + (0.0f + offsetY) * interpolationUpper;
-
-    //glm::vec3 interpolatedTexture = ((1.0f - offsetY) * //(1-B)
-    //                                    ((1.0f - offsetX) * texelTL + //(1-A) * TopLeft
-    //                                        ((0.0f + offsetX) * texelTR))) //(A) * TopRight
-    //    + ((0.0f + offsetY) * //(B)
-     //       ((1.0f - offsetX) * texelBL + //(1-A) * BottomLeft
-    //            ((0.0f + offsetX) * texelBR))) //(A) * BottomRight
-    //    ;
+    glm::vec3 interpolatedTexture = (1.0f - offsetY) * interpolationUpper + (offsetY) * interpolationLower;
 
     return interpolatedTexture;
 }
