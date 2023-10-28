@@ -77,7 +77,7 @@ glm::vec3 interpolateNormal(const glm::vec3& n0, const glm::vec3& n1, const glm:
 glm::vec2 interpolateTexCoord(const glm::vec2& t0, const glm::vec2& t1, const glm::vec2& t2, const glm::vec3 bc)
 {
     glm::vec2 interpolatedCoord = t0 * bc.x + t1 * bc.y + t2 * bc.z; 
-    return glm::normalize(interpolatedCoord);
+    return interpolatedCoord;
 }
 
 
