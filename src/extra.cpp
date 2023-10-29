@@ -123,15 +123,25 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
 // - rayDepth; current recursive ray depth
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
+
 void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
 
-    glm::vec3 reflectedRay = glm::reflect(ray.direction, hitInfo.normal);
-    glm::vec3 pointOfIntersection = ray.origin + ray.t * ray.direction;
+    glm::vec3 reflectedRay;
+    glm::vec3 pointOfIntersection;
     glm::vec3 glossyAccumulator;
+    glm::vec3 orthogonalBasis;
+    glm::vec3 orthogonalVector;
+    glm::vec3 reflectedRayPrime;
+    glm::vec3 renderRayResult;
+    glm::vec2 sampler;
+    
     float miscelaneous = FLT_EPSILON;
 
-    glm::vec3 orthogonalVector;
+    reflectedRay = glm::reflect(ray.direction, hitInfo.normal);
+    pointOfIntersection = ray.origin + ray.t * ray.direction;
+    
+    orthogonalVector = { 0, 0, 0 };
     if (reflectedRay.x == 0) {
         orthogonalVector.x = 1;
         orthogonalVector.y = -reflectedRay.z;
@@ -145,30 +155,43 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
         orthogonalVector.y = -reflectedRay.x;
         orthogonalVector.z = 0;
     }
-    glm::vec3 orthogonalBasis = glm::cross(orthogonalVector, reflectedRay);
+
+
+    orthogonalBasis = glm::cross(orthogonalVector, reflectedRay);
+    
     orthogonalBasis = glm::normalize(orthogonalBasis);
 
     for (int i = 0; i < state.features.extra.numGlossySamples; i++) {
 
+        
         //Two random between 
-        glm::vec2 sampler = state.sampler.next_2d();
+        sampler = state.sampler.next_2d();
 
+        
         float circleRadius = glm::sqrt(sampler.y) * hitInfo.material.shininess / 64.0f;
         float formulaAngle = 2 * glm::pi<float>() * sampler.x;
 
+        
         //Calculation of U and V for the formula
         float u = circleRadius * glm::cos(formulaAngle);
         float v = circleRadius * glm::sin(formulaAngle);
 
+    
         //Calculation fo the formula
-        glm::vec3 reflectedRayPrime = reflectedRay + u * orthogonalVector + v * orthogonalBasis;
+        reflectedRayPrime = reflectedRay + u * orthogonalVector + v * orthogonalBasis;
         reflectedRayPrime = glm::normalize(reflectedRayPrime);
 
+        
         //If the light is not from behind
-        if (glm::dot(hitInfo.normal, reflectedRayPrime) > 0)
-            glossyAccumulator = glossyAccumulator + renderRay(state, Ray(pointOfIntersection + miscelaneous * reflectedRayPrime, reflectedRayPrime), rayDepth + 1);
+        float condition = glm::dot(hitInfo.normal, reflectedRayPrime);
+        if (condition > 0) {
+            renderRayResult = renderRay(state, Ray(pointOfIntersection + miscelaneous * reflectedRayPrime, reflectedRayPrime), rayDepth + 1);
+            glossyAccumulator = glossyAccumulator + renderRayResult;
+        }
+    
     }
 
+    
     hitColor = hitColor + hitInfo.material.ks * glossyAccumulator;
    
 
@@ -303,7 +326,7 @@ AxisAlignedBox Union(AxisAlignedBox a, AxisAlignedBox b)
 
     return result;
 }
-constexpr int nBuckets = 8;
+constexpr int nBuckets = 16;
 //For each primitive in the range, we determine the bucket that its centroid lies in and update the bucket�s bounds to include the primitive�s bounds.
 void initializeB(std::span<BVH::Primitive> primitiveInfo,const AxisAlignedBox centroidBounds, uint32_t axis, std::vector<BucketInfo> &buckets)
     {
@@ -315,7 +338,7 @@ void initializeB(std::span<BVH::Primitive> primitiveInfo,const AxisAlignedBox ce
 
         if (b >= nBuckets)
             b = nBuckets - 1;
-        if (b <= nBuckets)
+        if (b <= 0)
             b = 0;
 
         buckets[b].count++;
@@ -380,7 +403,7 @@ size_t FindMinCostSplitBucket(std::vector<float> &cost, float& minCost)
     minCost = cost[0];
     size_t minCostSplitBucket = 0;
     for (size_t i = 0; i < nBuckets - 1; ++i) {
-            if (cost[i] <= minCost) {
+            if (cost[i] < minCost) {
             minCost = cost[i];
             minCostSplitBucket = i;
         }
@@ -420,7 +443,7 @@ size_t splitPrimitivesBySAHBin(const AxisAlignedBox& aabb, uint32_t axis, std::s
             primitives[poz] = buckets[i].prim[j];
             poz++;
         }
-        if (i <=  minCostSplitBucket )
+        if (i <  minCostSplitBucket )
         sum = sum + buckets[i].count;
     }
     if (sum == primitives.size() || sum == 0)
