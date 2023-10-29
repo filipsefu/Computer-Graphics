@@ -97,7 +97,9 @@ std::vector<Ray> generatePixelRaysMultisampled(RenderState& state, const Trackba
 
         glm::vec2 position = (glm::vec2(pixel) + currentSample) / glm::vec2(screenResolution) * 2.f - 1.f;
 
-        rays.push_back(camera.generateRay(position));
+        Ray calculatedRay = camera.generateRay(position);
+
+        rays.push_back(calculatedRay);
     }
 
     return rays;
@@ -137,7 +139,9 @@ std::vector<Ray> generatePixelRaysStratified(RenderState& state, const Trackball
             //Add the sample position (similarly to offsetting by 0.5f to get to center) convert to NDC.
             glm::vec2 position = (glm::vec2(pixel) + samplePosition) / glm::vec2(screenResolution) * 2.f - 1.f;
 
-            rays.push_back(camera.generateRay(position));
+            Ray calculatedRay = camera.generateRay(position);
+
+            rays.push_back(calculatedRay);
         }
     }
 

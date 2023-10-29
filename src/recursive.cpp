@@ -73,19 +73,22 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 {
     //Normalize ray direction
     glm::vec3 L = glm::normalize(ray.direction);
+    glm::vec3 N = glm::normalize(hitInfo.normal);
     
     //Find angle between intersection normal and light direction
 
-    float angleValue = glm::dot(hitInfo.normal, L);
+    float angleValue = glm::dot(N, L);
 
     //Calculate reflection vector using the formula L - (2 * dot(normal,light direction) * normal)
 
-    glm::vec3 R = L - 2.0f * angleValue * hitInfo.normal;
+    glm::vec3 R = L - 2.0f * angleValue * N;
 
     glm::vec3 intersection = ray.origin + ray.t * ray.direction;
 
     //Create reflected ray, it's origin will be the intersection point.
-    Ray reflectedRay = {intersection, R};
+    //Add an offset in the reflected ray direction as to prevent immediate self intersection. 
+    //This ensures that there will be no infinite recursion and the reflections look good.
+    Ray reflectedRay = {intersection + .0001f * R, R};
 
     return Ray {reflectedRay};
 }
@@ -102,8 +105,10 @@ Ray generatePassthroughRay(Ray ray, HitInfo hitInfo)
     //Use intersection point as the new origin
 
     glm::vec3 passthroughOrigin = ray.origin + ray.t * ray.direction;
+    
+    glm::vec3 normalizedDirection = glm::normalize(ray.direction);
 
-    return Ray {passthroughOrigin, ray.direction};
+    return Ray {passthroughOrigin + .0001f * normalizedDirection, ray.direction};
 }
 
 // TODO: standard feature
@@ -130,8 +135,11 @@ void renderRaySpecularComponent(RenderState& state, Ray ray, const HitInfo& hitI
     Ray r = generateReflectionRay(ray, hitInfo);
     
     //Get result, multiply by material.ks, add to hitColor
+    glm::vec3 reflectionColor = renderRay(state, r, rayDepth + 1);
+    hitColor +=  reflectionColor * hitInfo.material.ks;
 
-    hitColor += renderRay(state, r, rayDepth + 1) * hitInfo.material.ks;
+    //Ensure hitcolor values stay between 0.0f and 1.0f
+    hitColor = glm::clamp(hitColor, 0.0f, 1.0f);
 }
 
 // TODO: standard feature
@@ -160,10 +168,13 @@ void renderRayTransparentComponent(RenderState& state, Ray ray, const HitInfo& h
     //Get alpha value of intersection for alpha blending
 
     float alpha = hitInfo.material.transparency;
+    
+    //Get passthroughcolor, make sure to multiply by hitInfo diffuse coefficent
+    glm::vec3 passthroughColor = renderRay(state, r, rayDepth + 1) * hitInfo.material.kd;
 
     //Do alpha blending using the alpha value of the intersectionpoint.
 
-    glm::vec3 alphaBlend = (1.0f - alpha) * renderRay(state, r, rayDepth + 1) + (alpha) * hitColor;
+    glm::vec3 alphaBlend = (1.0f - alpha) * passthroughColor  + (alpha) * hitColor;
 
     hitColor = alphaBlend;
 }

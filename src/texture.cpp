@@ -16,12 +16,13 @@ glm::vec3 sampleTextureNearest(const Image& image, const glm::vec2& texCoord)
     //       an index using the method seen in the lecture.
     // Note: the center of the first pixel should be at coordinates (0.5, 0.5)
     // Given texcoords, return the corresponding pixel of the image
-
+     
     //Convert texCoord to index. Multiply by width/height - 1 to account for indices starting at 0.
     //Since images stored upside down, invert y coordinate.
     float xPos = (texCoord.x * (image.width - 1));
     float yPos = (1.0f - texCoord.y) * (image.height - 1);
 
+    // Round to nearest integer (corresponds to index)
     int nearestX = std::round(xPos);
     int nearestY = std::round(yPos);
 
@@ -31,7 +32,7 @@ glm::vec3 sampleTextureNearest(const Image& image, const glm::vec2& texCoord)
     nearestY = glm::clamp(nearestY, 0, image.height - 1);
 
     // Convert (i,j) to index using lecture method
-    int pixelIndex = (nearestX * image.width + nearestY);
+    int pixelIndex = (nearestY * image.width + nearestX);
 
     return image.pixels[pixelIndex];
 }
@@ -50,7 +51,7 @@ glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
     float xPos = (texCoord.x * (image.width - 1));
     float yPos = (1.0f - texCoord.y) * (image.height - 1);
 
-    //Use floor instead of round such that you get the top left texel
+    // Use floor instead of round such that you always get the top left texel
 
     int xTL = std::floor(xPos);
     int yTL = std::floor(yPos);
