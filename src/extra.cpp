@@ -124,24 +124,9 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
 
-void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
+glm::vec3 calculateOrthogonalVector(const glm::vec3& reflectedRay)
 {
-
-    glm::vec3 reflectedRay;
-    glm::vec3 pointOfIntersection;
-    glm::vec3 glossyAccumulator;
-    glm::vec3 orthogonalBasis;
     glm::vec3 orthogonalVector;
-    glm::vec3 reflectedRayPrime;
-    glm::vec3 renderRayResult;
-    glm::vec2 sampler;
-    
-    float miscelaneous = FLT_EPSILON;
-
-    reflectedRay = glm::reflect(ray.direction, hitInfo.normal);
-    pointOfIntersection = ray.origin + ray.t * ray.direction;
-    
-    orthogonalVector = { 0, 0, 0 };
     if (reflectedRay.x == 0) {
         orthogonalVector.x = 1;
         orthogonalVector.y = -reflectedRay.z;
@@ -155,52 +140,43 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
         orthogonalVector.y = -reflectedRay.x;
         orthogonalVector.z = 0;
     }
+    return orthogonalVector;
+}
 
+glm::vec3 calculateReflectedRayPrime(const glm::vec3& reflectedRay, const glm::vec3& orthogonalVector, const glm::vec3& orthogonalBasis, const glm::vec2& sampler, const HitInfo& hitInfo)
+{
+    float circleRadius = glm::sqrt(sampler.y) * hitInfo.material.shininess / 64.0f;
+    float formulaAngle = 2 * glm::pi<float>() * sampler.x;
+    float u = circleRadius * glm::cos(formulaAngle);
+    float v = circleRadius * glm::sin(formulaAngle);
+    glm::vec3 reflectedRayPrime = reflectedRay + u * orthogonalVector + v * orthogonalBasis;
+    return glm::normalize(reflectedRayPrime);
+}
 
-    orthogonalBasis = glm::cross(orthogonalVector, reflectedRay);
-    
+void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
+{
+    glm::vec3 reflectedRay = glm::reflect(ray.direction, hitInfo.normal);
+    glm::vec3 pointOfIntersection = ray.origin + ray.t * ray.direction;
+    glm::vec3 glossyAccumulator;
+    glm::vec3 orthogonalVector = calculateOrthogonalVector(reflectedRay);
+    glm::vec3 orthogonalBasis = glm::cross(orthogonalVector, reflectedRay);
     orthogonalBasis = glm::normalize(orthogonalBasis);
+    glm::vec3 reflectedRayPrime;
+    glm::vec3 renderRayResult;
+    glm::vec2 sampler;
+    float miscelaneous = FLT_EPSILON;
 
     for (int i = 0; i < state.features.extra.numGlossySamples; i++) {
-
-        
-        //Two random between 
         sampler = state.sampler.next_2d();
-
-        
-        float circleRadius = glm::sqrt(sampler.y) * hitInfo.material.shininess / 64.0f;
-        float formulaAngle = 2 * glm::pi<float>() * sampler.x;
-
-        
-        //Calculation of U and V for the formula
-        float u = circleRadius * glm::cos(formulaAngle);
-        float v = circleRadius * glm::sin(formulaAngle);
-
-    
-        //Calculation fo the formula
-        reflectedRayPrime = reflectedRay + u * orthogonalVector + v * orthogonalBasis;
-        reflectedRayPrime = glm::normalize(reflectedRayPrime);
-
-        
-        //If the light is not from behind
+        reflectedRayPrime = calculateReflectedRayPrime(reflectedRay, orthogonalVector, orthogonalBasis, sampler, hitInfo);
         float condition = glm::dot(hitInfo.normal, reflectedRayPrime);
         if (condition > 0) {
             renderRayResult = renderRay(state, Ray(pointOfIntersection + miscelaneous * reflectedRayPrime, reflectedRayPrime), rayDepth + 1);
             glossyAccumulator = glossyAccumulator + renderRayResult;
         }
-    
     }
 
-    
     hitColor = hitColor + hitInfo.material.ks * glossyAccumulator;
-   
-
-
-    // Generate an initial specular ray, and base secondary glossies on this ray
-    // auto numSamples = state.features.extra.numGlossySamples;
-    // ...
-    // Generate an initial specular ray, and base secondary glossies on this ray
-    
 }
 
 // TODO; Extra feature
@@ -213,91 +189,98 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
 // not go on a hunting expedition for your implementation, so please keep it here!
 glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
 {
-   if (state.features.extra.enableEnvironmentMap) {
-
-        AxisAlignedBox enviroment { glm::vec3(-1.0f), glm::vec3 { 1.0f } };
-        Ray shot { glm::vec3 { 0.0f }, ray.direction, std::numeric_limits<float>::max()};
-        intersectRayWithShape(enviroment, shot);
-        glm::vec3 intersect = shot.origin + shot.direction * shot.t;
-
-        float absX = abs(intersect.x);
-        float absY = abs(intersect.y);
-        float absZ = abs(intersect.z);
-
-        int isXPositive = intersect.x > 0 ? 1 : 0;
-        int isYPositive = intersect.y > 0 ? 1 : 0;
-        int isZPositive = intersect.z > 0 ? 1 : 0;
-
-        float maxAxis, uc, vc;
-        int face = 0;
-
-        if (isXPositive && absX >= absY && absX >= absZ) {
-            // u (0 to 1) goes from +z to -z
-            // v (0 to 1) goes from -y to +y
-            maxAxis = absX;
-            uc = -intersect.z;
-            vc = intersect.y;
-            face = 0;
-           
-        }
-        // NEGATIVE X
-        if (!isXPositive && absX >= absY && absX >= absZ) {
-            // u (0 to 1) goes from -z to +z
-            // v (0 to 1) goes from -y to +y
-            maxAxis = absX;
-            uc = intersect.z;
-            vc = intersect.y;
-            face = 1;
-           
-        }
-        // POSITIVE Y
-        if (isYPositive && absY >= absX && absY >= absZ) {
-            // u (0 to 1) goes from -x to +x
-            // v (0 to 1) goes from +z to -z
-            maxAxis = absY;
-            uc = intersect.x;
-            vc = -intersect.z;
-            face = 2;
-           
-        }
-        // NEGATIVE Y
-        if (!isYPositive && absY >= absX && absY >= absZ) {
-            // u (0 to 1) goes from -x to +x
-            // v (0 to 1) goes from -z to +z
-            maxAxis = absY;
-            uc = intersect.x;
-            vc = intersect.z;
-            face = 3;
-           
-        }
-        // POSITIVE Z
-        if (isZPositive && absZ >= absX && absZ >= absY) {
-            // u (0 to 1) goes from -x to +x
-            // v (0 to 1) goes from -y to +y
-            maxAxis = absZ;
-            uc = intersect.x;
-            vc = intersect.y;
-            face = 4;
-           
-        }
-        // NEGATIVE Z
-        if (!isZPositive && absZ >= absX && absZ >= absY) {
-            // u (0 to 1) goes from +x to -x
-            // v (0 to 1) goes from -y to +y
-            maxAxis = absZ;
-            uc = -intersect.x;
-            vc = intersect.y;
-            face = 5;
-            
-        }
-
-        // Convert range from -1 to 1 to 0 to 1
-        float u = 0.5f * (uc / maxAxis + 1.0f);
-        float v = 0.5f * (vc / maxAxis + 1.0f);
-        return sampleTextureNearest(*state.scene.environmentMap[face], glm::vec2 { u, v });
-    } else {
-        return glm::vec3(0.f);
+    if (!state.features.extra.enableEnvironmentMap) {
+        return glm::vec3(0.0f);
     }
+
+    AxisAlignedBox myBox;
+    myBox.lower = glm::vec3(-1.0f);
+    myBox.upper = glm::vec3(1.0f);
+
+    Ray myRay;
+    myRay.direction = glm::vec3(0.0f);
+    myRay.origin = ray.direction;
+    myRay.t = FLT_MAX;
+    
+    intersectRayWithShape(myBox, myRay);
+    glm::vec3 myPoint = myRay.origin + myRay.direction * myRay.t;
+
+    float myX = std::abs(myPoint.x);
+    float myY = std::abs(myPoint.y);
+    float myZ = std::abs(myPoint.z);
+
+    int myXPos, myYPos, myZPos;
+
+    if (myPoint.x > 0) {
+        myXPos = 1;
+    } else {
+        myXPos = 0;
+    }
+
+    if (myPoint.y > 0) {
+        myYPos = 1;
+    } else {
+        myYPos = 0;
+    }
+
+    if (myPoint.z > 0) {
+        myZPos = 1;
+    } else {
+        myZPos = 0;
+    }
+
+    float myMaxAxis;
+    if (myX >= myY && myX 
+        >= myZ) {
+        myMaxAxis = myX;
+    } else if (myY >= myX && myY >= myZ) {
+        myMaxAxis = myY;
+    } else {
+        myMaxAxis = myZ;
+    }
+
+    float myUCoord, myVCoord;
+    int myCubeMapFace = 0;
+
+    if (myXPos && myX >= myY && myX >= myZ) {
+        myMaxAxis = myX;
+        myUCoord = -myPoint.z;
+        myVCoord = myPoint.y;
+        myCubeMapFace = 0;
+    } else if (!myXPos && myX >= myY && myX >= myZ) {
+        myMaxAxis = myX;
+        myUCoord = myPoint.z;
+        myVCoord = myPoint.y;
+        myCubeMapFace = 1;
+    } else if (myYPos && myY >= myX && myY >= myZ) {
+        myMaxAxis = myY;
+        myUCoord = myPoint.x;
+        myVCoord = -myPoint.z;
+        myCubeMapFace = 2;
+    } else if (!myYPos && myY >= myX && myY >= myZ) {
+        myMaxAxis = myY;
+        myUCoord = myPoint.x;
+        myVCoord = myPoint.z;
+        myCubeMapFace = 3;
+    } else if (myZPos && myZ >= myX && myZ >= myY) {
+        myMaxAxis = myZ;
+        myUCoord = myPoint.x;
+        myVCoord = myPoint.y;
+        myCubeMapFace = 4;
+    } else if (!myZPos && myZ >= myX && myZ >= myY) {
+        myMaxAxis = myZ;
+        myUCoord = -myPoint.x;
+        myVCoord = myPoint.y;
+        myCubeMapFace = 5;
+    }
+
+    float myUValue = (myUCoord / myMaxAxis + 1.0f);
+    float myVValue = (myVCoord / myMaxAxis + 1.0f);
+    myUValue = myUValue / 2;
+    myVValue = myVValue / 2;
+
+
+    return sampleTextureNearest(*state.scene.environmentMap[myCubeMapFace], glm::vec2(myUValue, myVValue));
 }
 
 
