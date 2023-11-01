@@ -82,13 +82,14 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
     //Calculate reflection vector using the formula L - (2 * dot(normal,light direction) * normal)
 
     glm::vec3 R = L - 2.0f * angleValue * N;
+    glm::vec3 normalizedR = glm::normalize(R);
 
     glm::vec3 intersection = ray.origin + ray.t * ray.direction;
 
     //Create reflected ray, it's origin will be the intersection point.
     //Add an offset in the reflected ray direction as to prevent immediate self intersection. 
     //This ensures that there will be no infinite recursion and the reflections look good.
-    Ray reflectedRay = {intersection + .0001f * R, R};
+    Ray reflectedRay = {intersection + .0001f * normalizedR, R};
 
     return Ray {reflectedRay};
 }

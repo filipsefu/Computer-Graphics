@@ -78,15 +78,19 @@ void renderFrameWithMotionBlur(Scene& frameScene, const BVHInterface& bvh, const
         // We set the 4th keyframe to be the endpoint, thus it set to the exposureTime.
 
         const Keyframe kf0 = Keyframe(glm::vec3(0, 0, 0), 0.0f);
-        const Keyframe kf1 = Keyframe(glm::vec3(1000, 0, 0), 0.33f);
-        const Keyframe kf2 = Keyframe(glm::vec3(2, 1, 0), 0.66f);
-        const Keyframe kf3 = Keyframe(glm::vec3(0, 2, 1), 1.0f);
+        const Keyframe kf1 = Keyframe(glm::vec3(0.1, 0, 0), 0.33f);
+        const Keyframe kf2 = Keyframe(glm::vec3(0, 0.1, 0), 0.66f);
+        const Keyframe kf3 = Keyframe(glm::vec3(0, 0, 0.5), 1.0f);
 
         interpolateMesh(mesh, kf0, kf1, kf2, kf3, time);
 
 
     }
     
+    //Create a BVH for this frame because otherwise it will return color values of the original picture.
+
+    BVH frameBVH = BVH(frameScene, features);
+
     // Render the frameScene, but store colors in buffer instead of drawing pixels.
     // I copied this section from renderImage, making small necessary changes.
 
@@ -97,7 +101,7 @@ void renderFrameWithMotionBlur(Scene& frameScene, const BVHInterface& bvh, const
             RenderState state = {
                 .scene = frameScene,
                 .features = features,
-                .bvh = bvh,
+                .bvh = frameBVH,
                 .sampler = { static_cast<uint32_t>(screen.resolution().y * x + y) }
             };
             
@@ -121,7 +125,7 @@ void renderImageWithMotionBlur(const Scene& scene, const BVHInterface& bvh, cons
     float exposureTime = 1.0f;
 
     // numFrames is basically the amount of samples throughout the motion we will take (AKA screencapture of the object at time t)
-    int numFrames = 4;
+    int numFrames = 50;
 
     //Initialize color buffer to store colors.
     std::vector<glm::vec3> colors(screen.resolution().x * screen.resolution().y, glm::vec3(0.0f));
