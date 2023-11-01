@@ -64,6 +64,9 @@ glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, cons
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 interpolateNormal(const glm::vec3& n0, const glm::vec3& n1, const glm::vec3& n2, const glm::vec3 bc)
 {
+    glm::normalize(n0);
+    glm::normalize(n1);
+    glm::normalize(n2);
     //bc contains the weights of each normal so simply multiply them accordingly, then add.
     glm::vec3 interpolatedNormal = n0 * bc.x + n1 * bc.y + n2 * bc.z;
     return glm::normalize(interpolatedNormal);
