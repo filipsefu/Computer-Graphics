@@ -174,7 +174,7 @@ void renderRayTransparentComponent(RenderState& state, Ray ray, const HitInfo& h
 
     //Do alpha blending using the alpha value of the intersectionobject.
 
-    glm::vec3 alphaBlend = (alpha) * passthroughColor  + (1.0f - alpha) * hitColor;
+    glm::vec3 alphaBlend = (1.0f - alpha) * passthroughColor  + (alpha) * hitColor;
 
     hitColor = alphaBlend;
 }
