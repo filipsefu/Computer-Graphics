@@ -169,10 +169,10 @@ void renderRayTransparentComponent(RenderState& state, Ray ray, const HitInfo& h
 
     float alpha = hitInfo.material.transparency;
     
-    //Get passthroughcolor, make sure to multiply by hitInfo diffuse coefficent
-    glm::vec3 passthroughColor = renderRay(state, r, rayDepth + 1) * hitInfo.material.kd;
+    //Get passthroughcolor
+    glm::vec3 passthroughColor = renderRay(state, r, rayDepth + 1); //* hitInfo.material.kd;
 
-    //Do alpha blending using the alpha value of the intersectionpoint.
+    //Do alpha blending using the alpha value of the intersectionobject.
 
     glm::vec3 alphaBlend = (1.0f - alpha) * passthroughColor  + (alpha) * hitColor;
 
