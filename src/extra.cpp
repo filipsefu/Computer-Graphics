@@ -30,15 +30,132 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
 // to give objects the appearance of "fast movement".
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
+
+// Keyframe struct will store the time and position to define the path of motion. This will be used for interpolation.
+struct Keyframe {
+    glm::vec3 position;
+    float time;
+};
+
+
+
+void interpolateMesh(Mesh& mesh, const Keyframe& start, const Keyframe& kf1, const Keyframe& kf2, const Keyframe& end, float time)
+{
+    // Normalize time in frame (to use for interpolation)
+    // IE if start is at time , end at 7, and current time is 6, t = 2/3.
+
+    //To figure out the formula I used the following video: https://www.youtube.com/watch?v=pnYccz1Ha34&pp=ygUMYmV6aWVyIGN1cnZl.
+
+    float t = (time - start.time) / (end.time - start.time);
+    float tt = t * t;
+    float ttt = tt * t;
+    float u = 1.0f - t;
+    float uu = u * u;
+    float uuu = u * u * u;
+
+    // Cubic Bezier interpolation.
+    // (1-t)^3 * start + (3((1-t)^2)*t) * kf1 + (3(1-t) * (t**2)) * kf2 + t**3 * end
+
+    for (int i = 0; i < mesh.vertices.size(); i++) {
+        glm::vec3 originalPos = mesh.vertices[i].position;
+        glm::vec3 interpolatedPos = (uuu * start.position) + (3 * uu * t * kf1.position) + (3 * u * tt * kf2.position) + (ttt * end.position);
+
+        // update vertex, add the translation to the original position
+        mesh.vertices[i].position = originalPos + interpolatedPos;
+    }
+}
+
+void renderFrameWithMotionBlur(Scene& frameScene, const BVHInterface& bvh, const Features& features, const Trackball& camera, Screen& screen, float time, std::vector<glm::vec3>& colors)
+{
+    int width = screen.resolution().x;
+    int height = screen.resolution().y;
+
+    for (Mesh& mesh : frameScene.meshes) {
+
+        // Create Keyframes for arbitrary scene
+        // We need 4 keyframes for cubic bezier curve interpolation
+        // We set the first keyframe to be the starting point, thus at 0.0f
+        // We set the 4th keyframe to be the endpoint, thus it set to the exposureTime.
+
+        const Keyframe kf0 = Keyframe(glm::vec3(0, 0, 0), 0.0f);
+        const Keyframe kf1 = Keyframe(glm::vec3(1000, 0, 0), 0.33f);
+        const Keyframe kf2 = Keyframe(glm::vec3(2, 1, 0), 0.66f);
+        const Keyframe kf3 = Keyframe(glm::vec3(0, 2, 1), 1.0f);
+
+        interpolateMesh(mesh, kf0, kf1, kf2, kf3, time);
+
+
+    }
+    
+    // Render the frameScene, but store colors in buffer instead of drawing pixels.
+    // I copied this section from renderImage, making small necessary changes.
+
+    for (int y = 0; y < screen.resolution().y; y++) {
+        for (int x = 0; x != screen.resolution().x; x++) {
+            // Assemble useful objects on a per-pixel basis; e.g. a per-thread sampler
+            // Note; we seed the sampler for consistenct behavior across frames
+            RenderState state = {
+                .scene = frameScene,
+                .features = features,
+                .bvh = bvh,
+                .sampler = { static_cast<uint32_t>(screen.resolution().y * x + y) }
+            };
+            
+            auto rays = generatePixelRays(state, camera, { x, y }, screen.resolution());
+            auto L = renderRays(state, rays);
+
+            //Add color to the buffer
+
+            colors[x + y * width] += L;
+        }
+    }
+}
+
 void renderImageWithMotionBlur(const Scene& scene, const BVHInterface& bvh, const Features& features, const Trackball& camera, Screen& screen)
 {
     if (!features.extra.enableMotionBlur) {
         return;
     }
+    // Set shutterspeed and numFrames (will add slider if i have time)
+    // exposureTime is the amount of time for the motion
+    float exposureTime = 1.0f;
 
+    // numFrames is basically the amount of samples throughout the motion we will take (AKA screencapture of the object at time t)
+    int numFrames = 4;
+
+    //Initialize color buffer to store colors.
+    std::vector<glm::vec3> colors(screen.resolution().x * screen.resolution().y, glm::vec3(0.0f));
+
+    // Iterate over frames
+    for (int frame = 0; frame < numFrames; frame++) {
+
+        // Set new scene for each frame so they can be modified and the colors of their pixels can be computed individually.
+        // In other words you create an instance of the scene at certain points in the motion.
+
+        Scene motionBlurredScene = scene;
+
+        // Time at which current frame should be rendered
+        // Evenly distributed time intervals. IE: for 5 frames and exposure Time .5, we have: (0,1/8,2/8,3/8,4/8)
+        // In other words, divides the shutterSpeed time interval evenly into (#of frames) values
+
+        float time = frame / static_cast<float>(numFrames - 1) * exposureTime;
+
+        renderFrameWithMotionBlur(motionBlurredScene, bvh, features, camera, screen, time, colors);
+    }
+
+
+    // Now colors contains the total color contributions of all the frames, thus now we extract
+    // these color values and set the screen pixels.
+
+    for (int y = 0; y < screen.resolution().y; y++) {
+        for (int x = 0; x != screen.resolution().x; x++) {
+            glm::vec3 color = colors[x + y * screen.resolution().x];
+            glm::vec3 averageColor = color / static_cast<float>(numFrames);
+            screen.setPixel(x, y, averageColor);
+        }
+    }
 }
-
-// TODO; Extra feature
+    // TODO; Extra feature
 // Given a rendered image, compute and apply a bloom post-processing effect to increase bright areas.
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
