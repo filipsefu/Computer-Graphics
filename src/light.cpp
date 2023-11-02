@@ -118,13 +118,14 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec3& lightPosition, const glm::vec3& lightColor, const Ray& ray, const HitInfo& hitInfo)
 {
-    return lightColor;
     // TODO: implement this function; currently, the light simply passes through
     glm::vec3 result = lightColor * sampleMaterialKd(state, hitInfo) * (1 - hitInfo.material.transparency);
 
     if (hitInfo.material.transparency == 1)
         return lightColor;
     
+    return result;
+
     Ray r = Ray(lightPosition, ray.direction - lightPosition);
     HitInfo h = HitInfo();
     //loop
