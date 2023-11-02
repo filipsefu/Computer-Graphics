@@ -31,7 +31,8 @@ glm::vec3 sampleTextureNearest(const Image& image, const glm::vec2& texCoord)
     nearestX = glm::clamp(nearestX, 0, image.width - 1);
     nearestY = glm::clamp(nearestY, 0, image.height - 1);
 
-    // Convert (i,j) to index using lecture method
+    // Convert (i,j) to index 
+    // Formula for conversion from Computer Graphics 2023/2024 Lecture 2, slide 27
     int pixelIndex = (nearestY * image.width + nearestX);
 
     return image.pixels[pixelIndex];
@@ -78,6 +79,7 @@ glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
 
     // Bilinear Interpolation
     //  ((1-B) * (((1-A) * TopLeft) + ((A) * TopRight))) + (B * ((1-A) * BottomLeft + (A) * BottomRight))
+    // Formula from Computer Graphics 2023/2024 Lecture 4, slide 76
 
 
     //Linear interpolation on upper section

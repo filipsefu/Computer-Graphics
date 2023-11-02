@@ -63,22 +63,28 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
 
-// Keyframe struct will store the time and position to define the path of motion. This will be used for interpolation.
-struct Keyframe {
-    glm::vec3 position;
-    float time;
+//Sources that aided my general understanding of motion blur:
+//https://en.wikipedia.org/wiki/Motion_blur - specifically “Photography”
+//Fundamentals of Computer Graphics fourth edition 13.4.5 (page 349-350)
+//Computer Graphics 2023/2024 Lecture 8 - Ray Tracing
+
+//I realized thursday (Nov 2) that my implementation did not take the right direction. However, the correct implementation would require me to change sensitive files like CMAKE and 
+//other files that are used by the entire project so I did not want to risk putting my group's project in danger of breaking at the last second. Thus, I am leaving my original implementation.
+//My other implementation would consist of giving every ray a sampled time (in generate pixelRays) and altering the intersect functions to move the object based on the bezier curve, then using renderRays to get the average color at each pixel.
+//Even though my implementation is not fully correct I will add some visual debug.
+
+// CubicBezierCurve struct holds the positions that define the motion path
+// index 0 is start, index 3 is end.
+
+struct CubicBezierCurve {
+    std::vector<glm::vec3> keyframes;
 };
 
-
-
-void interpolateMesh(Mesh& mesh, const Keyframe& start, const Keyframe& kf1, const Keyframe& kf2, const Keyframe& end, float time)
+void interpolateMesh(Mesh& mesh, CubicBezierCurve curve, float t)
 {
-    // Normalize time in frame (to use for interpolation)
-    // IE if start is at time , end at 7, and current time is 6, t = 2/3.
 
     //To figure out the formula I used the following video: https://www.youtube.com/watch?v=pnYccz1Ha34&pp=ygUMYmV6aWVyIGN1cnZl.
-
-    float t = (time - start.time) / (end.time - start.time);
+;
     float tt = t * t;
     float ttt = tt * t;
     float u = 1.0f - t;
@@ -90,7 +96,7 @@ void interpolateMesh(Mesh& mesh, const Keyframe& start, const Keyframe& kf1, con
 
     for (int i = 0; i < mesh.vertices.size(); i++) {
         glm::vec3 originalPos = mesh.vertices[i].position;
-        glm::vec3 interpolatedPos = (uuu * start.position) + (3 * uu * t * kf1.position) + (3 * u * tt * kf2.position) + (ttt * end.position);
+        glm::vec3 interpolatedPos = (uuu * curve.keyframes[0]) + (3 * uu * t * curve.keyframes[1]) + (3 * u * tt * curve.keyframes[2]) + (ttt * curve.keyframes[3]);
 
         // update vertex, add the translation to the original position
         mesh.vertices[i].position = originalPos + interpolatedPos;
@@ -109,12 +115,9 @@ void renderFrameWithMotionBlur(Scene& frameScene, const BVHInterface& bvh, const
         // We set the first keyframe to be the starting point, thus at 0.0f
         // We set the 4th keyframe to be the endpoint, thus it set to the exposureTime.
 
-        const Keyframe kf0 = Keyframe(glm::vec3(0, 0, 0), 0.0f);
-        const Keyframe kf1 = Keyframe(glm::vec3(0.1, 0, 0), 0.33f);
-        const Keyframe kf2 = Keyframe(glm::vec3(0, 0.1, 0), 0.66f);
-        const Keyframe kf3 = Keyframe(glm::vec3(0, 0, 0.5), 1.0f);
+        CubicBezierCurve curve = { { glm::vec3(0.0f), glm::vec3(0.1, 0, 0), glm::vec3(0, 0.1, 0), glm::vec3(0, 0, .5) } };
 
-        interpolateMesh(mesh, kf0, kf1, kf2, kf3, time);
+        interpolateMesh(mesh, curve, time);
 
 
     }
@@ -152,7 +155,7 @@ void renderImageWithMotionBlur(const Scene& scene, const BVHInterface& bvh, cons
     if (!features.extra.enableMotionBlur) {
         return;
     }
-    // Set shutterspeed and numFrames (will add slider if i have time)
+    // Set exposureTime and numFrames (will add slider if i have time)
     // exposureTime is the amount of time for the motion
     float exposureTime = 1.0f;
 
@@ -172,7 +175,7 @@ void renderImageWithMotionBlur(const Scene& scene, const BVHInterface& bvh, cons
 
         // Time at which current frame should be rendered
         // Evenly distributed time intervals. IE: for 5 frames and exposure Time .5, we have: (0,1/8,2/8,3/8,4/8)
-        // In other words, divides the shutterSpeed time interval evenly into (#of frames) values
+        // In other words, divides the exposureTime  interval evenly into (#of frames) values
 
         float time = frame / static_cast<float>(numFrames - 1) * exposureTime;
 

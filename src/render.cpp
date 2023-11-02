@@ -94,6 +94,7 @@ std::vector<Ray> generatePixelRaysMultisampled(RenderState& state, const Trackba
 
         //Add to pixel (similarly to the method above where .5f was used to place ray at center), divide by resolution * 2 - 1 to get NDC coordinates 
         //It does this by multiplying resolution by 2 to map to [0,2] and then subtract 1 to map to [-1,1]
+        //I retrieved all information I needed to do this from the pre-implemented generatePixelRays function.
 
         glm::vec2 position = ((glm::vec2(pixel) + currentSample) / glm::vec2(screenResolution)) * 2.f - 1.f;
 
@@ -134,9 +135,13 @@ std::vector<Ray> generatePixelRaysStratified(RenderState& state, const Trackball
 
             //Calculates the sample position within the pixel by first finding the location of the cell (glm::vec2(x,y) * cellSize) 
             //and then adding the current sample (scaled by cellsize)
+            //In other words the first part finds the top left corner of the cell and the second part finds the location within that cell
+
             glm::vec2 samplePosition = glm::vec2(x, y) * cellSize + currentSample * cellSize;
 
             //Add the sample position (similarly to offsetting by 0.5f to get to center) convert to NDC.
+            //Convert to NDC: Map to 0,1, then 0,2, then -1,1
+
             glm::vec2 position = ((glm::vec2(pixel) + samplePosition) / glm::vec2(screenResolution)) * 2.f - 1.f;
 
             Ray calculatedRay = camera.generateRay(position);
