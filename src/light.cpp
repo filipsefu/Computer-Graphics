@@ -90,8 +90,8 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
         }
 
         // BLUE red ray when NO shadow
-        drawRay(Ray(pos1, lightPosition - pos1), glm::vec3(0, 0, 1));
-        drawRay(Ray(pos1, pos1 - lightPosition), glm::vec3(1, 0, 0));
+        //drawRay(Ray(pos1, lightPosition - pos1), glm::vec3(0, 0, 1));
+        //drawRay(Ray(pos1, pos1 - lightPosition), glm::vec3(1, 0, 0));
 
         //if( hit && rayShadow.t < ray.t)
         //if (hit && glm::distance(pos1, pos2) < epsilon)

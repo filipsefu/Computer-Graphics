@@ -64,8 +64,9 @@ glm::vec3 computeLambertianModel(RenderState& state, const glm::vec3& cameraDire
 
     /*if (dot(N, L) < 0)
         return lightColor * sampleMaterialKd(state, hitInfo);*/
-
-    return lightColor * sampleMaterialKd(state, hitInfo);
+    if (!state.features.enableTransparency)
+        return lightColor * sampleMaterialKd(state, hitInfo) * glm::max(0.0f, dot(N, L));
+    return lightColor * sampleMaterialKd(state, hitInfo) * glm::abs(dot(N, L));
 }
 
 // TODO: Standard feature
@@ -87,7 +88,7 @@ glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection
 {
     glm::vec3 N = normalize(hitInfo.normal);
     glm::vec3 L = normalize(lightDirection);
-    glm::vec3 diffuse = lightColor * sampleMaterialKd(state, hitInfo);
+    glm::vec3 diffuse = lightColor * sampleMaterialKd(state, hitInfo) * glm::max(0.0f, dot(N, L));
     //diffuse *= dot(N, L);
 
    /* if (dot(N, L) < 0)
@@ -121,7 +122,7 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
 {
     glm::vec3 N = normalize(hitInfo.normal);
     glm::vec3 L = normalize(lightDirection);
-    glm::vec3 diffuse = lightColor * sampleMaterialKd(state, hitInfo);
+    glm::vec3 diffuse = lightColor * sampleMaterialKd(state, hitInfo) * glm::max(0.0f, dot(N, L));
     //diffuse *= dot(N, L);
 
     /*if (dot(N, L) < 0)
