@@ -121,26 +121,25 @@ glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec
     // TODO: implement this function; currently, the light simply passes through
     glm::vec3 result = lightColor * sampleMaterialKd(state, hitInfo) * (1 - hitInfo.material.transparency);
 
-    if (hitInfo.material.transparency == 1)
+    if (hitInfo.material.transparency == 1.0f)
         return lightColor;
-    
-    return result;
 
-    Ray r = Ray(lightPosition, ray.direction - lightPosition);
-    HitInfo h = HitInfo();
-    //loop
-    if (state.bvh.intersect(state, r, h))
-    {
+    if (hitInfo.material.transparency > 0.0f) {
+        //glm::vec3 refracted = glm::refract(ray.direction, hitInfo.normal, 1.0f);
+
         glm::vec3 pos1 = ray.origin + ray.t * ray.direction;
-        glm::vec3 pos2 = r.origin + r.t * r.direction;
+        Ray r = Ray(lightPosition, pos1 - lightPosition);
+        HitInfo h = HitInfo();
 
-        if (glm::distance(pos1, pos2) > 1)
-        {
-            result = lightColor * sampleMaterialKd(state, h) * (1 - h.material.transparency);
-        } else {
-            return lightColor;
+        // loop
+        if (state.bvh.intersect(state, r, h)) {
+            glm::vec3 pos2 = r.origin + r.t * r.direction;
+            
+            r = Ray(pos2, pos2 - lightPosition);
+            result += visibilityOfLightSampleTransparency(state, lightPosition, lightColor, r, h) * hitInfo.material.transparency;
         }
     }
+   
     return result;  
 }
 
