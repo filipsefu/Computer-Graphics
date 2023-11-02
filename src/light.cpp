@@ -150,43 +150,6 @@ glm::vec3 helper1(RenderState& state, const glm::vec3& lightPosition, const glm:
     return newColor;
 }
 
-glm::vec3 helper(RenderState& state, const glm::vec3& lightPosition, const glm::vec3& lightColor, const Ray& ray, const HitInfo& hitInfo, int depth)
-{
-    if (depth >= 1984) {
-            return lightColor;
-    }
-
-    glm::vec3 newColor = lightColor;
-    float epsilon = 0.0001f;
-
-    // we compute the point of intersection
-    glm::vec3 point = ray.origin + ray.direction * (ray.t - epsilon);
-    glm::vec dir = glm::normalize(-point + lightPosition);
-
-    Ray r = Ray(point, dir);
-    HitInfo hit = HitInfo();
-
-    if (state.bvh.intersect(state, r, hit)) {
-            // we have a point
-
-            float lightT = glm::length(lightPosition - r.origin) / glm::length(r.direction);
-
-            // we need it positive
-            if (r.t - lightT > epsilon) {
-                return lightColor;
-            } else {
-                // glm::vec3 intersectPointBVH = r.origin + (r.t + 2 * epsilon) * r.direction;
-
-                // sampleMaterialKd(state, hitInfo)
-                r.t = r.t + 2 * epsilon;
-                glm::vec3 newColor = helper(state, lightPosition, lightColor, r, hitInfo, depth + 1);
-                return newColor * sampleMaterialKd(state, hit) * (1 - hit.material.transparency);
-            }
-    }
-
-    return newColor;
-}
-
 // TODO: Standard feature
 // Given a sampled position on some light, and the emitted color at this position, return the actual
 // light that is visible from the provided ray/intersection, or 0 if this is not the case.
