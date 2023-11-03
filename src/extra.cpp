@@ -22,38 +22,42 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
     }
 
     // ...
-    
-    float dist = 1.0f;
-    RenderState state = { .scene = scene, .features = features, .bvh = bvh, .sampler = { uint32_t(4) } };
-    
+#ifdef NDEBUG
+#pragma omp parallel for schedule(guided)
+#endif
     for (int y = 0; y < screen.resolution().y; ++y) {
-        for (int x = 0; x < screen.resolution().x; ++x) {
+        for (int x = 0; x != screen.resolution().x; ++x) {
             // ray
-            Ray ray = camera.generateRay(glm::vec2(x, y));
-            glm::vec3 direction = ray.origin + ray.direction * dist - camera.position();
+            RenderState state = { .scene = scene, .features = features, .bvh = bvh, .sampler = { static_cast<uint32_t>(screen.resolution().y * x + y) } };
 
-            //float theta = 2.0f * glm::pi() * state.sampler.next_1d(); // Random angle
-            //float r = sqrt(state.sampler.next_1d()) * (aperture / 2.0f); // Random radius within aperture
-            //glm::vec3 lens = glm::vec3(r * cos(theta), r * sin(theta), 0.0f);
-            glm::vec3 lens = camera.position();
+            std::vector<Ray> rays = generatePixelRays(state, camera, { x, y }, screen.resolution());
+            std::vector<Ray> rays2;
+            // glm::vec3 direction = ray.origin + ray.direction * dist - camera.position();
+            for (Ray ray : rays) {
+                glm::vec3 focalPoint = ray.origin + features.focalLength * ray.direction;
+                for (int i = 0; i < features.samples; i++) {
+                    // We define some perturbation, which is a random vector in the range [-0.5, 0.5] * apertureSize
+                    glm::vec2 perturbation = (state.sampler.next_2d() - 0.5f) * features.aperture;
 
-            Ray focus = Ray(lens, glm::normalize(direction));
+                    // Perturb the origin of the ray
+                    ray.origin += glm::vec3 { perturbation.x, perturbation.y, 0.f };
 
-            // trace ray + color
-            HitInfo hitpoint;
-            bool hit = bvh.intersect(state, focus, hitpoint);
+                    // Point the ray to the focal point
+                    ray.direction = glm::normalize(focalPoint - ray.origin);
 
-            glm::vec3 color = glm::vec3(0);
-            //glm::vec3 color = screen.pixels()[screen.indexAt(x,y)];
-            //glm::vec3 color = scene.environmentMap.front();
-
-            if (hit) {
-                color = computeLightContribution(state, focus, hitpoint);
+                    // Add the ray to the set of secondary rays
+                    rays2.push_back(ray);
+                }
             }
-            
-            screen.setPixel(x, y, color);
+            // Now, we have a set of secondary rays, which we can use to render the image
+            auto L = renderRays(state, rays2);
+            screen.setPixel(x, y, L);
         }
     }
+
+    /*if (features.extra.enableBloomEffect) {
+        postprocessImageWithBloom(scene, features, camera, screen);
+    }*/
 }
 
 // TODO; Extra feature
@@ -204,8 +208,8 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
     Screen high(image.resolution());
     Screen box(image.resolution());
     Screen result(image.resolution());
-    float epsilon = 0.9f;
-    float epsilon2 = 0.7f;
+    //float epsilon = 0.9f;
+    float epsilon2 = features.epsilon;
 
     // take big values
     for (int i = 0; i < image.resolution().x; i++)

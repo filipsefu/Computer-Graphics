@@ -80,7 +80,8 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
 
         glm::vec3 pos2 = rayShadow.origin + rayShadow.t * rayShadow.direction;
 
-        drawRay(rayShadow, glm::vec3(1, 0.5, 0.5));
+        //PINK ray where light reaches
+        //drawRay(rayShadow, glm::vec3(1, 0.5, 0.5));
 
         if (hit && glm::distance(pos1, pos2) > epsilon) {
             //GREEN light RED shadow 
@@ -89,24 +90,9 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
             return false;
         }
 
-        // BLUE red ray when NO shadow
+        // BLUE ray when NO shadow
         //drawRay(Ray(pos1, lightPosition - pos1), glm::vec3(0, 0, 1));
-        //drawRay(Ray(pos1, pos1 - lightPosition), glm::vec3(1, 0, 0));
-
-        //if( hit && rayShadow.t < ray.t)
-        //if (hit && glm::distance(pos1, pos2) < epsilon)
-        //if (hit && rayShadow.t < glm::distance(ray.origin, lightPosition))
-
-
-        //glm::vec3 intersectPoint = r.origin + r.direction * r.t;
-        //glm::vec3 inter = intersect - lightPosition;
-        //// position is already provided => we only have to compare the t values
-
-        //float epsilon = 0.00001;
-        //if (abs(glm::length(intersectPoint - intersect)) < epsilon) {
-        //    // the point is the same or aproximatively the same
-        //    return true;
-        //}
+        //drawRay(Ray(pos1, pos1 - lightPosition), glm::vec3(0, 0, 1));
 
         return true;
     }
@@ -114,24 +100,19 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
 
 glm::vec3 helper1(RenderState& state, const glm::vec3& lightPosition, const glm::vec3& lightColor, const Ray& ray, const HitInfo& hitInfo, int depth) {
 
-    if (depth >= 1984)
-        return lightColor;
+    /*if (depth >= 1984)
+        return lightColor;*/
 
-    glm::vec3 newColor = lightColor;
+    glm::vec3 result = lightColor;
+    float epsilon = 0.0001f;
 
-    // if (hitInfo.material.transparency > 0.0f) {
-        // glm::vec3 refracted = glm::refract(ray.direction, hitInfo.normal, 1.0f);
-
-        float epsilon = 0.0001f;
-
-        glm::vec3 pos1 = ray.origin + (ray.t - epsilon) * ray.direction;
-        Ray r = Ray(pos1, normalize(-pos1 + lightPosition));
-//        r.t = 3.40282e+038;
-        HitInfo h = HitInfo();
+    glm::vec3 pos1 = ray.origin + (ray.t - epsilon) * ray.direction;
+    Ray r = Ray(pos1, normalize(-pos1 + lightPosition));
+    HitInfo h = HitInfo();
 
         // recursive
         if (state.bvh.intersect(state, r, h)) {
-            float t = glm::length(lightPosition - r.origin) / glm::length(r.direction);
+            float t = glm::length(lightPosition - r.origin);
 
             drawRay(r, glm::vec3(depth%2, 1, 1));
 
@@ -140,14 +121,13 @@ glm::vec3 helper1(RenderState& state, const glm::vec3& lightPosition, const glm:
             else {
                 r.t += 2 * epsilon;
 
-                newColor = helper1(state, lightPosition, lightColor, r, hitInfo, depth + 1);
+                result = helper1(state, lightPosition, lightColor, r, hitInfo, depth + 1) * sampleMaterialKd(state, h) * (1 - h.material.transparency);
                 
-                return newColor * sampleMaterialKd(state, h) * (1 - h.material.transparency);
+                return result;
             }
         }
-    //}
 
-    return newColor;
+    return result;
 }
 
 // TODO: Standard feature

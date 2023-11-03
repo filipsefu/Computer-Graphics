@@ -103,6 +103,8 @@ std::ostream& operator<<(std::ostream& os, const Config& config)
        << "    - num_shadow_samples: " << config.features.numShadowSamples << std::endl
        << "  + extra_features: " << std::endl
        << "    - enable_bloom_effect: " << config.features.extra.enableBloomEffect << std::endl;
+       //<< "    - bloom_threshold: " << config.features.epsilon << std::endl;
+
 
 
     os << "    - enable_jittered_sampling: " << config.features.enableJitteredSampling << std::endl;
@@ -296,6 +298,9 @@ Config readConfigFile(const std::filesystem::path& config_path)
         config.features.extra.enableBloomEffect = table["features"]["extra"]["enable_bloom_effect"]
                                                       .as_boolean()
                                                       ->value_or(false);
+        //config.features.epsilon = table["features"]["bloom_threshold"]
+        //                                       .as_floating_point()
+        //                                       ->value_or(0);
     }
 
     config.features.extra.enableEnvironmentMap = table["features"]["extra"]["enable_environment_map"]

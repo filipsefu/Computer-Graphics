@@ -62,8 +62,6 @@ glm::vec3 computeLambertianModel(RenderState& state, const glm::vec3& cameraDire
     glm::vec3 N = normalize(hitInfo.normal);
     glm::vec3 L = normalize(lightDirection);
 
-    /*if (dot(N, L) < 0)
-        return lightColor * sampleMaterialKd(state, hitInfo);*/
     if (!state.features.enableTransparency)
         return lightColor * sampleMaterialKd(state, hitInfo) * glm::max(0.0f, dot(N, L));
     return lightColor * sampleMaterialKd(state, hitInfo) * glm::abs(dot(N, L));
@@ -88,19 +86,14 @@ glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection
 {
     glm::vec3 N = normalize(hitInfo.normal);
     glm::vec3 L = normalize(lightDirection);
-    glm::vec3 diffuse = lightColor * sampleMaterialKd(state, hitInfo) * glm::max(0.0f, dot(N, L));
-    //diffuse *= dot(N, L);
-
-   /* if (dot(N, L) < 0)
-        return diffuse;*/
+    glm::vec3 diffuse = computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
 
     glm::vec3 R = normalize(glm::reflect(-L, N));
     glm::vec3 V = normalize(cameraDirection);
 
-    /*if (dot(V, R) <= 0)
-        return glm::vec3(0.0f, 0.0f, 0.0f);*/
-
-    return diffuse + hitInfo.material.ks * lightColor * glm::pow(glm::max(0.0f, dot(V, R)), hitInfo.material.shininess);
+    if (!state.features.enableTransparency)
+        return diffuse + hitInfo.material.ks * lightColor * glm::pow(glm::max(0.0f, dot(V, R)), hitInfo.material.shininess);
+    return diffuse + hitInfo.material.ks * lightColor * glm::pow(glm::abs(dot(V, R)), hitInfo.material.shininess);
 }
 
 // TODO: Standard feature
@@ -122,19 +115,14 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
 {
     glm::vec3 N = normalize(hitInfo.normal);
     glm::vec3 L = normalize(lightDirection);
-    glm::vec3 diffuse = lightColor * sampleMaterialKd(state, hitInfo) * glm::max(0.0f, dot(N, L));
-    //diffuse *= dot(N, L);
-
-    /*if (dot(N, L) < 0)
-        return diffuse;*/
+    glm::vec3 diffuse = computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
 
     glm::vec3 V = normalize(cameraDirection);
     glm::vec3 H = normalize(L + V);
 
-    /*if (dot(N, H) < 0)
-        return diffuse;*/
-
-    return diffuse + hitInfo.material.ks * lightColor * glm::pow(glm::max(0.0f, dot(N, H)), hitInfo.material.shininess);
+    if (!state.features.enableTransparency)
+        return diffuse + hitInfo.material.ks * lightColor * glm::pow(glm::max(0.0f, dot(N, H)), hitInfo.material.shininess);
+    return diffuse + hitInfo.material.ks * lightColor * glm::pow(glm::abs(dot(N, H)), hitInfo.material.shininess);
 }
 
 // TODO: Standard feature
@@ -183,8 +171,7 @@ glm::vec3 computeLinearGradientModel(RenderState& state, const glm::vec3& camera
     glm::vec3 N = normalize(hitInfo.normal);
     glm::vec3 L = normalize(lightDirection);
 
-    /*if (dot(N, L) < 0)
-        return gradient.sample(dot(N, L)) * lightColor;*/
-
-    return gradient.sample(dot(N, L)) * lightColor; // * glm::max(0.0f, dot(N, L));
+    if (!state.features.enableTransparency)
+        return gradient.sample(dot(N, L)) * lightColor * glm::max(0.0f, dot(N, L));
+    return gradient.sample(dot(N, L)) * lightColor * glm::abs(dot(N, L));
 }
