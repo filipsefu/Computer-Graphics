@@ -126,7 +126,7 @@ Scene loadScenePrebuilt(SceneType type, const std::filesystem::path& dataDir)
         subMeshes[5].material = Material {
             .kd = glm::vec3(0.25, 1, 0.25),
             .ks = glm::vec3(0),
-            .transparency = 0.1f
+            .transparency = 0.0f
         };
         // subMeshes[6].material.transparency = 0.5;
         // subMeshes[7].material.transparency = 0.5;
