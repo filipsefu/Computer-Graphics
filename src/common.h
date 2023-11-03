@@ -92,9 +92,9 @@ struct Features {
 
     // Extras-specific settings
     ExtraFeatures extra = {};
+    // depth of field
     float focalLength = 1.0f;
-    float aperture = .0f;
-    uint16_t samples = 1;
+    float aperture = .1f;
     // bloom threshold
     float epsilon = 0.6f;
 };

@@ -16,49 +16,51 @@
 // are in play, allowing objects to be in and out of focus.
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
+//
+// reference:
+// https://en.wikipedia.org/wiki/Depth_of_field
+// "Fundamentals of Computer Graphics - Ch 13.4.3 Depth of Field"
+// //
 void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, const Features& features, const Trackball& camera, Screen& screen)
 {
     if (!features.extra.enableDepthOfField) {
         return;
     }
-
-    // ...
 #ifdef NDEBUG
 #pragma omp parallel for schedule(guided)
 #endif
-    for (int y = 0; y < screen.resolution().y; ++y) {
-        for (int x = 0; x != screen.resolution().x; ++x) {
-            // ray
-            RenderState state = { .scene = scene, .features = features, .bvh = bvh, .sampler = { static_cast<uint32_t>(screen.resolution().y * x + y) } };
-
-            std::vector<Ray> rays = generatePixelRays(state, camera, { x, y }, screen.resolution());
+    for (int j = 0; j < screen.resolution().y; j++) {
+        for (int i = 0; i < screen.resolution().x; i++) {
+            uint16_t sampler = screen.indexAt(i, j);
+            RenderState state = { .scene = scene, .features = features, .bvh = bvh, .sampler = sampler };
+            std::vector<Ray> rays = generatePixelRays(state, camera, { i, j }, screen.resolution());
             std::vector<Ray> rays2;
-            // glm::vec3 direction = ray.origin + ray.direction * dist - camera.position();
-            for (Ray ray : rays) {
-                glm::vec3 focalPoint = ray.origin + features.focalLength * ray.direction;
-                for (int i = 0; i < features.samples; i++) {
-                    // We define some perturbation, which is a random vector in the range [-0.5, 0.5] * apertureSize
-                    glm::vec2 perturbation = (state.sampler.next_2d() - 0.5f) * features.aperture;
 
-                    // Perturb the origin of the ray
-                    ray.origin += glm::vec3 { perturbation.x, perturbation.y, 0.f };
+            glm::vec3 point;
+            glm::vec2 noise;
 
-                    // Point the ray to the focal point
-                    ray.direction = glm::normalize(focalPoint - ray.origin);
+            // for visual debug
+            float focalLength = features.focalLength;
+            bool visualize = false;
+            if (visualize)
+                focalLength = glm::sqrt(11.0f);
 
-                    // Add the ray to the set of secondary rays
-                    rays2.push_back(ray);
+            for (Ray& r : rays) {
+                // focal point
+                point = r.origin + r.direction * focalLength;
+
+                for (int k = 0; k < 10; k++) {
+                    noise = state.sampler.next_2d() - 0.5f;
+                    Ray res = Ray(r.origin + glm::vec3(noise.x * features.aperture, noise.y * features.aperture, 0.0f),
+                        glm::normalize(-r.origin + point));
+                    res.t = r.t;
+
+                    rays2.push_back(res);
                 }
             }
-            // Now, we have a set of secondary rays, which we can use to render the image
-            auto L = renderRays(state, rays2);
-            screen.setPixel(x, y, L);
+            screen.setPixel(i, j, renderRays(state, rays2));
         }
     }
-
-    /*if (features.extra.enableBloomEffect) {
-        postprocessImageWithBloom(scene, features, camera, screen);
-    }*/
 }
 
 // TODO; Extra feature
@@ -203,6 +205,9 @@ void renderImageWithMotionBlur(const Scene& scene, const BVHInterface& bvh, cons
 // Given a rendered image, compute and apply a bloom post-processing effect to increase bright areas.
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
+//
+// reference: "https://brightspace.tudelft.nl/d2l/le/content/595314/viewContent/3520316/View"
+// //
 void postprocessImageWithBloom(const Scene& scene, const Features& features, const Trackball& camera, Screen& image)
 {
     if (!features.extra.enableBloomEffect) {

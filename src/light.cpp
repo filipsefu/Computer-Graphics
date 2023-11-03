@@ -22,6 +22,9 @@ DISABLE_WARNINGS_POP()
 // - position;  reference return value of the sampled position on the light
 // - color;     reference return value of the color emitted by the light at the sampled position
 // This method is unit-tested, so do not change the function signature.
+//
+// reference: https://brightspace.tudelft.nl/d2l/le/content/595314/viewContent/3512131/View
+// //
 void sampleSegmentLight(const float& sample, const SegmentLight& light, glm::vec3& position, glm::vec3& color)
 {
     // TODO: implement this function.
