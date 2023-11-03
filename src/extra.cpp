@@ -51,11 +51,11 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
 
                 for (int k = 0; k < 10; k++) {
                     noise = state.sampler.next_2d() - 0.5f;
-                    Ray res = Ray(r.origin + glm::vec3(noise.x * features.aperture, noise.y * features.aperture, 0.0f),
-                        glm::normalize(-r.origin + point));
-                    res.t = r.t;
+                    r.origin += glm::vec3(noise.x * features.aperture, noise.y * features.aperture, 0.0f);
+                    r.direction = glm::normalize(-r.origin + point);
+                    //res.t = r.t;
 
-                    rays2.push_back(res);
+                    rays2.push_back(r);
                 }
             }
             screen.setPixel(i, j, renderRays(state, rays2));
