@@ -92,4 +92,8 @@ struct Features {
 
     // Extras-specific settings
     ExtraFeatures extra = {};
+    float focalLength = 1.0f;
+    float aperture = .0f;
+    uint16_t samples = 1;
+    float epsilon = 0.7f;
 };
