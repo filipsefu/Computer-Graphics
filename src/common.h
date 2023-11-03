@@ -95,5 +95,6 @@ struct Features {
     float focalLength = 1.0f;
     float aperture = .0f;
     uint16_t samples = 1;
-    float epsilon = 0.7f;
+    // bloom threshold
+    float epsilon = 0.6f;
 };

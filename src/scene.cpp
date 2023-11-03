@@ -114,23 +114,23 @@ Scene loadScenePrebuilt(SceneType type, const std::filesystem::path& dataDir)
         //// Spherical light: position, radius, color
         //// scene.lights.push_back(SphericalLight{ glm::vec3(0, 1.5f, 0), 0.2f, glm::vec3(1) });
 
-        // Load a 3D model of a Cornell Box
-        auto subMeshes = loadMesh(dataDir / "CornellBox-Mirror-Rotated.obj", true);
-        // for (auto &mesh : subMeshes)
-        //     mesh.material.transparency = 0.5f;
-        subMeshes[6].material = Material {
-            .kd = glm::vec3(1, 0.25, 0.25),
-            .ks = glm::vec3(0),
-            .transparency = 1.0f
-        };
-        subMeshes[5].material = Material {
-            .kd = glm::vec3(0.25, 1, 0.25),
-            .ks = glm::vec3(0),
-            .transparency = 0.0f
-        };
-        // subMeshes[6].material.transparency = 0.5;
-        // subMeshes[7].material.transparency = 0.5;
-        std::move(std::begin(subMeshes), std::end(subMeshes), std::back_inserter(scene.meshes));
+        //// Load a 3D model of a Cornell Box
+        //auto subMeshes = loadMesh(dataDir / "CornellBox-Mirror-Rotated.obj", true);
+        //// for (auto &mesh : subMeshes)
+        ////     mesh.material.transparency = 0.5f;
+        //subMeshes[6].material = Material {
+        //    .kd = glm::vec3(1, 0.25, 0.25),
+        //    .ks = glm::vec3(0),
+        //    .transparency = 1.0f
+        //};
+        //subMeshes[5].material = Material {
+        //    .kd = glm::vec3(0.25, 1, 0.25),
+        //    .ks = glm::vec3(0),
+        //    .transparency = 0.0f
+        //};
+        //// subMeshes[6].material.transparency = 0.5;
+        //// subMeshes[7].material.transparency = 0.5;
+        //std::move(std::begin(subMeshes), std::end(subMeshes), std::back_inserter(scene.meshes));
         scene.lights.emplace_back(PointLight { glm::vec3(0, 0.58f, 0), glm::vec3(1) });
     } break;
     };
