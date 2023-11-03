@@ -116,7 +116,6 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
 glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec3& lightPosition, const glm::vec3& lightColor, const Ray& ray, const HitInfo& hitInfo)
 {
     // TODO: implement this function; currently, the light simply passes through
-    //return helper1(state, lightPosition, lightColor, ray, hitInfo, 0);
     
     glm::vec3 result = lightColor;
     float epsilon = 0.0001f;
