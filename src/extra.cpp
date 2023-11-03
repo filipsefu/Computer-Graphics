@@ -218,15 +218,8 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
             int index = image.indexAt(i, j);
             glm::vec3 color = image.pixels().at(index);
 
-            if (color.x < epsilon2 && color.y < epsilon2 && color.z < epsilon2)
+            if (!(color.x > epsilon2 && color.y > epsilon2 && color.z > epsilon2))
                 color = glm::vec3(0);
-
-            /*if (color.x > epsilon2)
-                color.x = 0.0;
-            if (color.y < epsilon2)
-                color.y = 0.0;
-            if (color.z < epsilon2)
-                color.z = 0.0;*/
 
             high.setPixel(i, j, color);
         }

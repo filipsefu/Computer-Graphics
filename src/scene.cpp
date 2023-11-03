@@ -106,13 +106,32 @@ Scene loadScenePrebuilt(SceneType type, const std::filesystem::path& dataDir)
         scene.lights.emplace_back(PointLight { glm::vec3(3, 0, 3), glm::vec3(15) });
     } break;
     case Custom: {
-        // === Replace custom.obj by your own 3D model (or call your 3D model custom.obj) ===
-        auto subMeshes = loadMesh(dataDir / "custom.obj");
+        //// === Replace custom.obj by your own 3D model (or call your 3D model custom.obj) ===
+        //auto subMeshes = loadMesh(dataDir / "custom.obj");
+        //std::move(std::begin(subMeshes), std::end(subMeshes), std::back_inserter(scene.meshes));
+        //// === CHANGE THE LIGHTING IF DESIRED ===
+        //scene.lights.emplace_back(PointLight { glm::vec3(-1, 1, -1), glm::vec3(1) });
+        //// Spherical light: position, radius, color
+        //// scene.lights.push_back(SphericalLight{ glm::vec3(0, 1.5f, 0), 0.2f, glm::vec3(1) });
+
+        // Load a 3D model of a Cornell Box
+        auto subMeshes = loadMesh(dataDir / "CornellBox-Mirror-Rotated.obj", true);
+        // for (auto &mesh : subMeshes)
+        //     mesh.material.transparency = 0.5f;
+        subMeshes[6].material = Material {
+            .kd = glm::vec3(1, 0.25, 0.25),
+            .ks = glm::vec3(0),
+            .transparency = 1.0f
+        };
+        subMeshes[5].material = Material {
+            .kd = glm::vec3(0.25, 1, 0.25),
+            .ks = glm::vec3(0),
+            .transparency = 0.1f
+        };
+        // subMeshes[6].material.transparency = 0.5;
+        // subMeshes[7].material.transparency = 0.5;
         std::move(std::begin(subMeshes), std::end(subMeshes), std::back_inserter(scene.meshes));
-        // === CHANGE THE LIGHTING IF DESIRED ===
-        scene.lights.emplace_back(PointLight { glm::vec3(-1, 1, -1), glm::vec3(1) });
-        // Spherical light: position, radius, color
-        // scene.lights.push_back(SphericalLight{ glm::vec3(0, 1.5f, 0), 0.2f, glm::vec3(1) });
+        scene.lights.emplace_back(PointLight { glm::vec3(0, 0.58f, 0), glm::vec3(1) });
     } break;
     };
 
