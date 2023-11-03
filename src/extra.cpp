@@ -208,7 +208,7 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
     Screen high(image.resolution());
     Screen box(image.resolution());
     Screen result(image.resolution());
-    //float epsilon = 0.9f;
+
     float epsilon2 = features.epsilon;
 
     // take big values
@@ -221,11 +221,11 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
             if (color.x < epsilon2 && color.y < epsilon2 && color.z < epsilon2)
                 color = glm::vec3(0);
 
-            /*if (color.x > epsilon)
+            /*if (color.x > epsilon2)
                 color.x = 0.0;
-            if (color.y < epsilon)
+            if (color.y < epsilon2)
                 color.y = 0.0;
-            if (color.z < epsilon)
+            if (color.z < epsilon2)
                 color.z = 0.0;*/
 
             high.setPixel(i, j, color);
