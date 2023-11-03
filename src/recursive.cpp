@@ -85,6 +85,8 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
     glm::vec3 R = L - 2.0f * angleValue * N;
     glm::vec3 normalizedR = glm::normalize(R);
 
+    //Computer Graphics 2023/2024 Lecture 8, slide 6 (ray representation)
+
     glm::vec3 intersection = ray.origin + ray.t * ray.direction;
 
     //Create reflected ray, it's origin will be the intersection point.
