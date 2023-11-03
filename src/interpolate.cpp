@@ -18,6 +18,7 @@ float findArea(const glm::vec3& v0, const glm::vec3& v1)
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& p)
 {
+    //Computer Graphics 2023/2024 Lecture 5, slide 81 (barycentric coordinates)
     //Initialize
     float alpha;
     float beta;

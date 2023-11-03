@@ -16,6 +16,8 @@ glm::vec3 sampleTextureNearest(const Image& image, const glm::vec2& texCoord)
     //       an index using the method seen in the lecture.
     // Note: the center of the first pixel should be at coordinates (0.5, 0.5)
     // Given texcoords, return the corresponding pixel of the image
+
+    //Fundamentals of Computer Graphics fourth edition 11.1 (texture mapping)
      
     //Convert texCoord to index. Multiply by width/height - 1 to account for indices starting at 0.
     //Since images stored upside down, invert y coordinate.
