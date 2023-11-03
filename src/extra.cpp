@@ -209,9 +209,10 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
     }
 
     Screen high(image.resolution());
+    Screen horizontal(image.resolution());
     Screen box(image.resolution());
     Screen result(image.resolution());
-    //float epsilon = 0.9f;
+
     float epsilon2 = features.epsilon;
 
     // take big values
@@ -221,38 +222,59 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
             int index = image.indexAt(i, j);
             glm::vec3 color = image.pixels().at(index);
 
-            if (color.x < epsilon2 && color.y < epsilon2 && color.z < epsilon2)
+            if (!(color.x > epsilon2 && color.y > epsilon2 && color.z > epsilon2))
                 color = glm::vec3(0);
-
-            /*if (color.x > epsilon)
-                color.x = 0.0;
-            if (color.y < epsilon)
-                color.y = 0.0;
-            if (color.z < epsilon)
-                color.z = 0.0;*/
 
             high.setPixel(i, j, color);
         }
     }
 
-    //box filter
-    for (int i = 1; i < image.resolution().x - 1; i++) {
-        for (int j = 1; j < image.resolution().y - 1; j++) {
-            int index1 = high.indexAt(i - 1, j - 1);
-            int index2 = high.indexAt(i - 1, j);
-            int index3 = high.indexAt(i - 1, j + 1);
-            int index4 = high.indexAt(i, j - 1);
-            int index5 = high.indexAt(i, j);
-            int index6 = high.indexAt(i, j + 1);
-            int index7 = high.indexAt(i + 1, j - 1);
-            int index8 = high.indexAt(i + 1, j);
-            int index9 = high.indexAt(i + 1, j + 1);
+    //filter horizontally
+    for (int i = 0; i < image.resolution().x; i++) {
+        for (int j = 0; j < image.resolution().y; j++) {
+            int index0 = high.indexAt(i, 0);
+            int index1 = high.indexAt(i, 0);
+            int index2 = high.indexAt(i, j);
+            int index3 = high.indexAt(i, image.resolution().y - 1);
+            int index4 = high.indexAt(i, image.resolution().y - 1);
 
+            if (j - 2 >= 0)
+                index0 = high.indexAt(i, j - 2);
+            if (j - 1 >= 0)
+                index1 = high.indexAt(i, j - 1);
+            if (j + 1 < image.resolution().y)
+                index3 = high.indexAt(i, j + 1);
+            if (j + 2 < image.resolution().y)
+                index4 = high.indexAt(i, j + 2);
 
-            glm::vec3 color = high.pixels().at(index1) + high.pixels().at(index2) + high.pixels().at(index3) + 
-                high.pixels().at(index4) + high.pixels().at(index5) + high.pixels().at(index6) +
-                high.pixels().at(index7) + high.pixels().at(index8) + high.pixels().at(index9);
-            color /= 9;
+            glm::vec3 color = high.pixels().at(index0) + high.pixels().at(index1) * 4.0f + high.pixels().at(index2) * 6.0f +
+                high.pixels().at(index3) * 4.0f + high.pixels().at(index4);
+            color /= 16;
+            horizontal.setPixel(i, j, color);
+        }
+    }
+
+    // filter vertically
+    for (int i = 0; i < image.resolution().x; i++) {
+        for (int j = 0; j < image.resolution().y; j++) {
+            int index0 = horizontal.indexAt(0, j);
+            int index1 = horizontal.indexAt(0, j);
+            int index2 = horizontal.indexAt(i, j);
+            int index3 = horizontal.indexAt(image.resolution().x - 1, j);
+            int index4 = horizontal.indexAt(image.resolution().x - 1, j);
+
+            if (i - 2 >= 0)
+                index0 = horizontal.indexAt(i - 2, j);
+            if (i - 1 >= 0)
+                index1 = horizontal.indexAt(i - 1, j);
+            if (i + 1 < image.resolution().x)
+                index3 = horizontal.indexAt(i + 1, j);
+            if (i + 2 < image.resolution().x)
+                index4 = horizontal.indexAt(i + 2, j);
+
+            glm::vec3 color = horizontal.pixels().at(index0) + horizontal.pixels().at(index1) * 4.0f + horizontal.pixels().at(index2) * 6.0f + 
+                horizontal.pixels().at(index3) * 4.0f + horizontal.pixels().at(index4);
+            color /= 16;
             box.setPixel(i, j, color);
         }
     }

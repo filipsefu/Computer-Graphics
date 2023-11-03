@@ -98,38 +98,6 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
     }
 }
 
-glm::vec3 helper1(RenderState& state, const glm::vec3& lightPosition, const glm::vec3& lightColor, const Ray& ray, const HitInfo& hitInfo, int depth) {
-
-    /*if (depth >= 1984)
-        return lightColor;*/
-
-    glm::vec3 result = lightColor;
-    float epsilon = 0.0001f;
-
-    glm::vec3 pos1 = ray.origin + (ray.t - epsilon) * ray.direction;
-    Ray r = Ray(pos1, normalize(-pos1 + lightPosition));
-    HitInfo h = HitInfo();
-
-        // recursive
-        if (state.bvh.intersect(state, r, h)) {
-            float t = glm::length(lightPosition - r.origin);
-
-            drawRay(r, glm::vec3(depth%2, 1, 1));
-
-            if (r.t - t > epsilon)
-                return lightColor;
-            else {
-                r.t += 2 * epsilon;
-
-                result = helper1(state, lightPosition, lightColor, r, hitInfo, depth + 1) * sampleMaterialKd(state, h) * (1 - h.material.transparency);
-                
-                return result;
-            }
-        }
-
-    return result;
-}
-
 // TODO: Standard feature
 // Given a sampled position on some light, and the emitted color at this position, return the actual
 // light that is visible from the provided ray/intersection, or 0 if this is not the case.
@@ -148,7 +116,33 @@ glm::vec3 helper1(RenderState& state, const glm::vec3& lightPosition, const glm:
 glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec3& lightPosition, const glm::vec3& lightColor, const Ray& ray, const HitInfo& hitInfo)
 {
     // TODO: implement this function; currently, the light simply passes through
-    return helper1(state, lightPosition, lightColor, ray, hitInfo, 0);
+    
+    glm::vec3 result = lightColor;
+    float epsilon = 0.0001f;
+
+    glm::vec3 pos1 = ray.origin + (ray.t - epsilon) * ray.direction;
+    Ray r = Ray(pos1, normalize(-pos1 + lightPosition));
+    HitInfo h = HitInfo();
+
+    // recursive
+    if (state.bvh.intersect(state, r, h)) {
+            float t = glm::length(lightPosition - r.origin);
+
+            if (r.t - t > epsilon)
+                return lightColor;
+            else {
+                r.t += 2 * epsilon;
+
+                result = visibilityOfLightSampleTransparency(state, lightPosition, lightColor, r, hitInfo);
+
+                if (h.material.transparency != 0.0f)
+                    result *= sampleMaterialKd(state, h) * (1 - h.material.transparency);
+
+                return result;
+            }
+    }
+
+    return result;
 }
 
 // TODO: Standard feature
