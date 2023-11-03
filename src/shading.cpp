@@ -82,6 +82,9 @@ glm::vec3 computeLambertianModel(RenderState& state, const glm::vec3& cameraDire
 // - return;          the result of shading along the cameraDirection vector
 //
 // This method is unit-tested, so do not change the function signature.
+//
+// reference: https://brightspace.tudelft.nl/d2l/le/content/595314/viewContent/3526106/View
+// //
 glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection, const glm::vec3& lightDirection, const glm::vec3& lightColor, const HitInfo& hitInfo)
 {
     glm::vec3 N = normalize(hitInfo.normal);
