@@ -95,13 +95,18 @@ public: // Visual debug
     // For a description of the method's arguments, refer to 'bounding_volume_hierarchy.cpp'
     // You are free to modify this function's signature.
     void debugDrawLevel(int level);
+    void debugDrawLevelSah(int level);
     void debugDrawLevelHelper(int level, int current_level, int position);
+    void debugDrawLevelHelperSah(int level, int current_level, int position);
+
 
     // Draw data of the leaf at the selected index.
     // For a description of the method's arguments, refer to 'bounding_volume_hierarchy.cpp'
     // You are free to modify this function's signature.
     void debugDrawLeaf(int leafIndex);
+    void debugDrawLeafSah(int leafIndex);
     void debugDrawLeafHelper(int leafIndex, int position, int& count);
+    void debugDrawLeafHelperSah(int leafIndex, int position, int& count);
 
 public: // Public getters
     // Accessors to underlying data

@@ -8,6 +8,7 @@
 #include <cmath>
 #include <intersect.h>
 #include <texture.h>
+#include <draw.h>
 
 // TODO; Extra feature
 // Given the same input as for `renderImage()`, instead render an image with your own implementation
@@ -123,60 +124,84 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
 // - rayDepth; current recursive ray depth
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
-
-glm::vec3 calculateOrthogonalVector(const glm::vec3& reflectedRay)
+//Information regarding the implementation got from the book and the additional document
+bool glossyDebug = false;
+void setGlossyDebug(bool value)
 {
-    glm::vec3 orthogonalVector;
-    if (reflectedRay.x == 0) {
-        orthogonalVector.x = 1;
-        orthogonalVector.y = -reflectedRay.z;
-        orthogonalVector.z = reflectedRay.y;
-    } else if (reflectedRay.y == 0) {
-        orthogonalVector.x = -reflectedRay.z;
-        orthogonalVector.y = 1;
-        orthogonalVector.z = reflectedRay.x;
-    } else {
-        orthogonalVector.x = reflectedRay.y;
-        orthogonalVector.y = -reflectedRay.x;
-        orthogonalVector.z = 0;
-    }
-    return orthogonalVector;
-}
-
-glm::vec3 calculateReflectedRayPrime(const glm::vec3& reflectedRay, const glm::vec3& orthogonalVector, const glm::vec3& orthogonalBasis, const glm::vec2& sampler, const HitInfo& hitInfo)
-{
-    float circleRadius = glm::sqrt(sampler.y) * hitInfo.material.shininess / 64.0f;
-    float formulaAngle = 2 * glm::pi<float>() * sampler.x;
-    float u = circleRadius * glm::cos(formulaAngle);
-    float v = circleRadius * glm::sin(formulaAngle);
-    glm::vec3 reflectedRayPrime = reflectedRay + u * orthogonalVector + v * orthogonalBasis;
-    return glm::normalize(reflectedRayPrime);
+    glossyDebug = value;
 }
 
 void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
-    glm::vec3 reflectedRay = glm::reflect(ray.direction, hitInfo.normal);
-    glm::vec3 pointOfIntersection = ray.origin + ray.t * ray.direction;
+
+    glm::vec3 reflectedRay;
+    glm::vec3 pointOfIntersection;
     glm::vec3 glossyAccumulator;
-    glm::vec3 orthogonalVector = calculateOrthogonalVector(reflectedRay);
-    glm::vec3 orthogonalBasis = glm::cross(orthogonalVector, reflectedRay);
-    orthogonalBasis = glm::normalize(orthogonalBasis);
+    glm::vec3 orthogonalBasis;
+    glm::vec3 orthogonalVector;
     glm::vec3 reflectedRayPrime;
     glm::vec3 renderRayResult;
     glm::vec2 sampler;
-    float miscelaneous = FLT_EPSILON;
+
+    float miscelaneous = 0.0006f;
+
+    reflectedRay = glm::reflect(ray.direction, hitInfo.normal);
+    pointOfIntersection = ray.origin + ray.t * ray.direction;
+
+   switch ((reflectedRay.x == 0) * 1 + (reflectedRay.y == 0) * 2) {
+    case 1:
+        orthogonalVector.x = 1;
+        orthogonalVector.y = -reflectedRay.z;
+        orthogonalVector.z = reflectedRay.y;
+        break;
+    case 2:
+        orthogonalVector.x = -reflectedRay.z;
+        orthogonalVector.y = 1;
+        orthogonalVector.z = reflectedRay.x;
+        break;
+    default:
+        orthogonalVector.x = reflectedRay.y;
+        orthogonalVector.y = -reflectedRay.x;
+        orthogonalVector.z = 0;
+    }
+
+    orthogonalBasis = glm::cross(orthogonalVector, reflectedRay);
+
+    orthogonalBasis = glm::normalize(orthogonalBasis);
 
     for (int i = 0; i < state.features.extra.numGlossySamples; i++) {
+
+        // Two random between
         sampler = state.sampler.next_2d();
-        reflectedRayPrime = calculateReflectedRayPrime(reflectedRay, orthogonalVector, orthogonalBasis, sampler, hitInfo);
+        float circlez = glm::sqrt(sampler.y * sampler.y + sampler.x * sampler.x);
+        float circleRadius = glm::sqrt(circlez) * hitInfo.material.shininess / 64.0f;
+        float formulaAngle = 2 * glm::pi<float>() * sampler.x;
+
+        // Calculation of U and V for the formula
+        float u = circleRadius * glm::cos(formulaAngle);
+        float v = circleRadius * glm::sin(formulaAngle);
+
+        // Calculation fo the formula
+        reflectedRayPrime = reflectedRay + u * orthogonalVector + v * orthogonalBasis;
+        reflectedRayPrime = glm::normalize(reflectedRayPrime);
+
+        // If the light is not from behind
         float condition = glm::dot(hitInfo.normal, reflectedRayPrime);
         if (condition > 0) {
-            renderRayResult = renderRay(state, Ray(pointOfIntersection + miscelaneous * reflectedRayPrime, reflectedRayPrime), rayDepth + 1);
+            Ray newRay = Ray(pointOfIntersection + miscelaneous * reflectedRayPrime, reflectedRayPrime);
+            renderRayResult = renderRay(state, newRay ,rayDepth + 1);
+            if (glossyDebug)
+                drawRay(newRay, renderRayResult);
             glossyAccumulator = glossyAccumulator + renderRayResult;
         }
     }
 
-    hitColor = hitColor + hitInfo.material.ks * glossyAccumulator;
+    hitColor = hitColor + hitInfo.material.ks * glossyAccumulator / (float)state.features.extra.numGlossySamples;
+
+    // Generate an initial specular ray, and base secondary glossies on this ray
+    // auto numSamples = state.features.extra.numGlossySamples;
+    // ...
+    // Generate an initial specular ray, and base secondary glossies on this ray
 }
 
 // TODO; Extra feature
@@ -187,6 +212,8 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
 // - ray;   ray object
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
+
+// Information regarding the implementation of this function got from https://en.wikipedia.org/wiki/Cube_mapping
 glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
 {
     if (!state.features.extra.enableEnvironmentMap) {
@@ -317,7 +344,7 @@ void initializeB(std::span<BVH::Primitive> primitiveInfo,const AxisAlignedBox ce
 
         float centroid = computePrimitiveCentroid(primitiveInfo[i])[axis];
 
-        int b = nBuckets * ((centroid - centroidBounds.lower[axis]) / (centroidBounds.upper[axis] - centroidBounds.lower[axis]));
+        int b = nBuckets* ((centroid - centroidBounds.lower[axis]) / (centroidBounds.upper[axis] - centroidBounds.lower[axis]));
 
         if (b >= nBuckets)
             b = nBuckets - 1;
@@ -362,12 +389,16 @@ float SurfaceArea(AxisAlignedBox box)
             for (int j = 0; j <= i; ++j)
             {
                 b0 = Union(b0, buckets[j].bounds);
+                if (count0 == 0)
+                b0= buckets[j].bounds;
                 count0 += buckets[j].count;
             }
 
             for (int j = i + 1; j < nBuckets; ++j)
             {
                 b1 = Union(b1, buckets[j].bounds);
+                if (count1 == 0)
+                b1 = buckets[j].bounds;
                 count1 += buckets[j].count;
             }
 
@@ -426,10 +457,10 @@ size_t splitPrimitivesBySAHBin(const AxisAlignedBox& aabb, uint32_t axis, std::s
             primitives[poz] = buckets[i].prim[j];
             poz++;
         }
-        if (i <  minCostSplitBucket )
+        if (i <=  minCostSplitBucket )
         sum = sum + buckets[i].count;
     }
     if (sum == primitives.size() || sum == 0)
-        return splitPrimitivesByMedian(aabb, axis, primitives);
+        sum =  splitPrimitivesByMedian(aabb, axis, primitives);
     return sum;
 }

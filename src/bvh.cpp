@@ -446,7 +446,14 @@ void BVH::debugDrawLevel(int level)
 {
     debugDrawLevelHelper(level, 0, 0);
 }
-
+void BVH::debugDrawLevelSah(int level)
+{
+    debugDrawLevelHelperSah(level, 0, 0);
+}
+double scaleBetweenZeroAndOne(double x, double min, double max)
+{
+    return (x - min) / (max - min);
+}
 void BVH::debugDrawLevelHelper(int level, int current_level, int position)
 {
     if (position < 0 || position >= m_nodes.size()) {
@@ -456,16 +463,16 @@ void BVH::debugDrawLevelHelper(int level, int current_level, int position)
         return;
     }
     if (level == current_level) {
-        drawAABB(m_nodes[position].aabb, DrawMode::Wireframe, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f);
+        drawAABB(m_nodes[position].aabb, DrawMode::Wireframe, glm::vec3(scaleBetweenZeroAndOne(current_level, 0, m_numLevels), 0.5, 1 - scaleBetweenZeroAndOne(current_level, 0, m_numLevels)), 1.0f);
         return;
     }
 
    if (current_level < level) {
         if (!m_nodes[position].isLeaf()) {
-            debugDrawLevelHelper(level, current_level + 1, m_nodes[position].leftChild());
-            debugDrawLevelHelper(level, current_level + 1, m_nodes[position].rightChild());
-        }
 
+        debugDrawLevelHelper(level, current_level + 1, m_nodes[position].leftChild());
+        debugDrawLevelHelper(level, current_level + 1, m_nodes[position].rightChild());
+        }
     }
 
 
@@ -481,6 +488,11 @@ void BVH::debugDrawLeaf(int leafIndex)
 {
     int count = 0;
     debugDrawLeafHelper(leafIndex, 0, count);
+}
+void BVH::debugDrawLeafSah(int leafIndex)
+{
+    int count = 0;
+    debugDrawLeafHelperSah(leafIndex, 0, count);
 }
 
 void BVH::debugDrawLeafHelper(int leafIndex, int position, int& count)
@@ -502,6 +514,56 @@ void BVH::debugDrawLeafHelper(int leafIndex, int position, int& count)
         if (!m_nodes[position].isLeaf()) {
             debugDrawLeafHelper(leafIndex, m_nodes[position].leftChild(), count);
             debugDrawLeafHelper(leafIndex, m_nodes[position].rightChild(), count);
+        }
+    }
+}
+
+
+
+
+void BVH::debugDrawLeafHelperSah(int leafIndex, int position, int& count)
+{
+    if (position < 0 || position >= m_nodes.size()) {
+        return;
+    }
+    if (m_nodes[position].isLeaf()) {
+        if (count == leafIndex) {
+            AxisAlignedBox leafAABB = m_nodes[position].aabb;
+            drawAABB(leafAABB, DrawMode::Wireframe, glm::vec3(1.0f, 0.0f, 0.0f), 1.0f);
+            return;
+        }
+        count++;
+        return;
+    }
+
+    if (count < leafIndex) {
+        if (!m_nodes[position].isLeaf()) {
+            debugDrawLeafHelperSah(leafIndex, m_nodes[position].leftChild(), count);
+            debugDrawLeafHelperSah(leafIndex, m_nodes[position].rightChild(), count);
+        }
+    }
+}
+
+void BVH::debugDrawLevelHelperSah(int level, int current_level, int position)
+{
+    if (position < 0 || position >= m_nodes.size()) {
+        return;
+    }
+    if (m_nodes[position].isLeaf() && current_level != level) {
+        return;
+    }
+    if (!m_nodes[position].isLeaf() && level == current_level) {
+        AxisAlignedBox aabb_left { m_nodes[m_nodes[position].leftChild()].aabb.lower, m_nodes[m_nodes[position].leftChild()].aabb.upper };
+        AxisAlignedBox aabb_right { m_nodes[m_nodes[position].rightChild()].aabb.lower, m_nodes[m_nodes[position].rightChild()].aabb.upper };
+        drawAABB(aabb_left, DrawMode::Wireframe, glm::vec3(1.0f, 0.0f, 0.0f), 1.0f);
+        drawAABB(aabb_right, DrawMode::Wireframe, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
+        return;
+    }
+
+    if (current_level < level) {
+        if (!m_nodes[position].isLeaf()) {
+                debugDrawLevelHelperSah(level, current_level + 1, m_nodes[position].leftChild());
+                debugDrawLevelHelperSah(level, current_level + 1, m_nodes[position].rightChild());
         }
     }
 }
