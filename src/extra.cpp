@@ -201,6 +201,10 @@ void renderImageWithMotionBlur(const Scene& scene, const BVHInterface& bvh, cons
 // not go on a hunting expedition for your implementation, so please keep it here!
 void postprocessImageWithBloom(const Scene& scene, const Features& features, const Trackball& camera, Screen& image)
 {
+    Image img = Image("C:/Users/maria/source/repos/template-project/data/cube_1.jpg");
+    Screen newimg(glm::vec2(img.width, img.height));
+    newimg.pixels() = img.pixels;
+
     if (!features.extra.enableBloomEffect) {
         return;
     }
