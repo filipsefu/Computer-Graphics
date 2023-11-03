@@ -6,6 +6,7 @@
 #include "sampler.h"
 #include "recursive.h"
 #include "screen.h"
+#include "extra.cpp"
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
 DISABLE_WARNINGS_PUSH()
@@ -45,7 +46,6 @@ static void setOpenGLMatrices(const Trackball& camera);
 static void drawLightsOpenGL(const Scene& scene, const Trackball& camera, int selectedLight);
 static void drawSceneOpenGL(const Scene& scene);
 bool sliderIntSquarePower(const char* label, int* v, int v_min, int v_max);
-
 int main(int argc, char** argv)
 {
     Config config = {};
@@ -73,9 +73,14 @@ int main(int argc, char** argv)
         BVH bvh(scene, config.features);
 
         int bvhDebugLevel = 0;
+        int bvhDebugLevelSah = 0;
         int bvhDebugLeaf = 1;
+        int bvhDebugLeafSah = 1;
         bool debugBVHLevel { false };
         bool debugBVHLeaf { false };
+        bool glossyDebug { false };
+        bool sahDebugBVHLevel { false };
+        bool sahDebugBVHLeaf { false };
         ViewMode viewMode { ViewMode::Rasterization };
 
         window.registerKeyCallback([&](int key, int /* scancode */, int action, int /* mods */) {
@@ -206,6 +211,11 @@ int main(int argc, char** argv)
                     ImGui::SliderScalar("Glossy samples", ImGuiDataType_U32, &config.features.extra.numGlossySamples, &minSamples, &maxSamples);
                     ImGui::Unindent();
                 }
+                ImGui::Checkbox("Glossy Reflections Visual Debug", &glossyDebug);
+                if (glossyDebug)
+                    {
+                    setGlossyDebug(glossyDebug);
+                }
                 ImGui::Checkbox("Environment maps", &config.features.extra.enableEnvironmentMap);
                 ImGui::Checkbox("Texture filtering (mipmap)", &config.features.extra.enableMipmapTextureFiltering);
             }
@@ -221,7 +231,6 @@ int main(int argc, char** argv)
                 ImGui::InputFloat3("Rotation", glm::value_ptr(rotation), "%0.2f", ImGuiInputTextFlags_ReadOnly);
                 ImGui::TreePop();
             }
-
             ImGui::Spacing();
             ImGui::Separator();
             if (ImGui::Button("Render to file")) {
@@ -254,6 +263,19 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Draw BVH Leaf", &debugBVHLeaf);
                 if (debugBVHLeaf)
                     ImGui::SliderInt("BVH Leaf", &bvhDebugLeaf, 1, bvh.numLeaves());
+            }
+            if (config.features.extra.enableBvhSahBinning) {
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Text("SAH-Binning Debug");
+                if (viewMode == ViewMode::Rasterization) {
+                    ImGui::Checkbox("Draw BVH-SAH Level", &sahDebugBVHLevel);
+                    if (sahDebugBVHLevel)
+                        ImGui::SliderInt("BVH-SAH Level", &bvhDebugLevelSah, 0, bvh.numLevels() - 1);
+                    ImGui::Checkbox("Draw BVH-SAH Leaf", &sahDebugBVHLeaf);
+                    if (sahDebugBVHLeaf)
+                        ImGui::SliderInt("BVH-SAH Leaf", &bvhDebugLeafSah, 1, bvh.numLeaves());
+                }
             }
 
             ImGui::Spacing();
@@ -407,6 +429,24 @@ int main(int argc, char** argv)
                     if (debugBVHLeaf)
                         bvh.debugDrawLeaf(bvhDebugLeaf);
                     enableDebugDraw = false;
+                    glPopAttrib();
+                }
+                if (sahDebugBVHLevel || sahDebugBVHLeaf) {
+                    glPushAttrib(GL_ALL_ATTRIB_BITS);
+                    setOpenGLMatrices(camera);
+                    glDisable(GL_LIGHTING);
+                    glEnable(GL_DEPTH_TEST);
+
+                    // Enable alpha blending. More info at:
+                    // https://learnopengl.com/Advanced-OpenGL/Blending
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                    enableDebugDrawSah = true;
+                    if (sahDebugBVHLevel)
+                        bvh.debugDrawLevelSah(bvhDebugLevelSah);
+                    if (sahDebugBVHLeaf)
+                        bvh.debugDrawLeafSah(bvhDebugLeafSah);
+                    enableDebugDrawSah = false;
                     glPopAttrib();
                 }
             } break;

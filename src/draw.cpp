@@ -23,6 +23,7 @@ DISABLE_WARNINGS_POP()
 #include <algorithm>
 
 bool enableDebugDraw = false;
+bool enableDebugDrawSah = false;
 
 static void setMaterial(const Material& material)
 {

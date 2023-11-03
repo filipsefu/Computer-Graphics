@@ -6,6 +6,7 @@
 
 // Flag to enable/disable the debug drawing.
 extern bool enableDebugDraw;
+extern bool enableDebugDrawSah;
 
 // Add your own custom visual debug draw functions here then implement it in draw.cpp.
 // You are free to modify the example one however you like.
